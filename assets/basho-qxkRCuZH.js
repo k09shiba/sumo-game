@@ -1,4 +1,4 @@
-import{G as e,b as r,s as l}from"./index-dno3a5Ew.js";import{D as d,C as h}from"./disciple-B56uESAJ.js";import{g as m,s as v,a as u}from"./basho-BDhVYfye.js";import{i as b,r as p}from"./charRenderer-CIeJ27gz.js";import{t as $}from"./modal-gNpRr-OF.js";let o=null,c=null;function S(){var t;o=m(),v();const s=document.getElementById("screen-basho");s.innerHTML=`
+import{G as e,b as r,t as h,s as l}from"./index-Cj6Noyl4.js";import{D as d,C as m}from"./disciple-DjEOdKBc.js";import{g as v,s as u,a as b}from"./basho-yp6hZq3g.js";import{i as p,r as $}from"./charRenderer-BeLMb1_3.js";let o=null,c=null;function E(){var t;o=v(),u();const s=document.getElementById("screen-basho");s.innerHTML=`
     <div class="basho-wrap">
       <div class="basho-header">
         <h2>令和${e.year}年${e.month}月　${o.name}</h2>
@@ -14,7 +14,7 @@ import{G as e,b as r,s as l}from"./index-dno3a5Ew.js";import{D as d,C as h}from"
         <button class="btn btn-red btn-big" id="btn-start-basho">🥁 取組開始！</button>
         <button class="btn btn-back" onclick="cancelBasho()">← 戻る</button>
       </div>
-    </div>`,f(),(t=document.getElementById("btn-start-basho"))==null||t.addEventListener("click",w),window.doSave=()=>{r(),$("セーブしました！")},window.cancelBasho=()=>{e.phase="main",l("main")}}function f(){const s=document.getElementById("basho-lineup");if(!s)return;const t=e.disciples.filter(n=>!n.retired);if(s.innerHTML='<h3 class="section-title">出場力士</h3>',s.innerHTML+=t.map(n=>{const i=d[n.divIdx],a=h[n.conditionIdx??2];return`
+    </div>`,f(),(t=document.getElementById("btn-start-basho"))==null||t.addEventListener("click",w),window.doSave=()=>{r(),h("セーブしました！")},window.cancelBasho=()=>{e.phase="main",l("main")}}function f(){const s=document.getElementById("basho-lineup");if(!s)return;const t=e.disciples.filter(n=>!n.retired);if(s.innerHTML='<h3 class="section-title">出場力士</h3>',s.innerHTML+=t.map(n=>{const i=d[n.divIdx],a=m[n.conditionIdx??2];return`
       <div class="lineup-card">
         <div class="lc-name">${n.name}</div>
         <div class="lc-rank">${i.name}${n.pos}枚目（${i.matches}番）</div>
@@ -23,7 +23,7 @@ import{G as e,b as r,s as l}from"./index-dno3a5Ew.js";import{D as d,C as h}from"
       </div>`}).join(""),e.rival){const n=e.rival,i=d[n.divIdx];s.innerHTML+=`
       <div class="rival-info">
         ⚔ ライバル：${n.name}（${i.name}${n.pos}枚目）が同じ場所に出場中
-      </div>`}}async function w(){const s=document.getElementById("btn-start-basho");s&&(s.disabled=!0),c={};for(const t of e.disciples)t.retired||(c[t.id]=u(t));e.phase="results",e.currentBashoResults=c,r(),I()}function I(){var i;const s=e.disciples.find(a=>!a.retired);if(!s){l("results");return}const t=c[s.id]||[],n=document.getElementById("screen-basho");n.innerHTML=`
+      </div>`}}async function w(){const s=document.getElementById("btn-start-basho");s&&(s.disabled=!0),c={};for(const t of e.disciples)t.retired||(c[t.id]=b(t));e.phase="results",e.currentBashoResults=c,r(),I()}function I(){var i;const s=e.disciples.find(a=>!a.retired);if(!s){l("results");return}const t=c[s.id]||[],n=document.getElementById("screen-basho");n.innerHTML=`
     <div class="basho-wrap">
       <div class="basho-header">
         <h2>${o.name}　${s.name}の取組</h2>
@@ -49,4 +49,4 @@ import{G as e,b as r,s as l}from"./index-dno3a5Ew.js";import{D as d,C as h}from"
       </div>
 
       <button class="btn btn-red btn-big" id="btn-to-results">結果発表へ →</button>
-    </div>`,b(document.getElementById("basho-char")),p(s),(i=document.getElementById("btn-to-results"))==null||i.addEventListener("click",()=>l("results"))}export{S as renderBasho};
+    </div>`,p(document.getElementById("basho-char")),$(s),(i=document.getElementById("btn-to-results"))==null||i.addEventListener("click",()=>l("results"))}export{E as renderBasho};
