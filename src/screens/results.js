@@ -148,6 +148,23 @@ function runPostBashoProcessing() {
     const losses = d.losses || 0;
     const div    = DIVISIONS[d.divIdx];
 
+    // 成長履歴を記録（場所後のステータスを保存）
+    d.statHistory = d.statHistory || [];
+    d.statHistory.push({
+      bashoIdx: GS.bashoCount,
+      year: GS.year,
+      month: GS.month,
+      power: d.power,
+      tech: d.tech,
+      spirit: d.spirit,
+      divIdx: d.divIdx,
+      pos: d.pos,
+      wins,
+      losses,
+    });
+    // 履歴は最大30場所分保持
+    if (d.statHistory.length > 30) d.statHistory.shift();
+
     // やる気更新
     updateMotivation(d);
 

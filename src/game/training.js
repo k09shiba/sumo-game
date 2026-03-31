@@ -1,5 +1,6 @@
 import {
   TRAINING_CMDS, CONDITIONS, TRAINING_TURNS_PER_BASHO,
+  SPECIAL_MOVE_UNLOCKS,
   rRange, clamp,
 } from './constants.js';
 import { calcOptimalWeight, weightStatus } from './disciple.js';
@@ -57,7 +58,7 @@ export function applyTraining(d, cmdId) {
 
   switch (cmdId) {
     case 'oshi': {
-      const gain = personalityGain(d, 'power', Math.round(rRange(8, 16) * dojoBonus * talentFactor));
+      const gain = personalityGain(d, 'power', Math.round(rRange(4, 10) * dojoBonus * talentFactor));
       d.power = clamp(d.power + gain, 0, statCap);
       d.styleXP.oshi = (d.styleXP.oshi || 0) + 10;
       if (d.styleXP.oshi > 80 && d.sumoStyle !== 'oshi') {
@@ -65,10 +66,11 @@ export function applyTraining(d, cmdId) {
         msgs.push('押し相撲が身についた！');
       }
       msgs.push(`筋力 +${gain}`);
+      checkSpecialMoveUnlock(d, 'oshi', msgs);
       break;
     }
     case 'yotsu': {
-      const gain = personalityGain(d, 'tech', Math.round(rRange(8, 16) * dojoBonus * talentFactor));
+      const gain = personalityGain(d, 'tech', Math.round(rRange(4, 10) * dojoBonus * talentFactor));
       d.tech = clamp(d.tech + gain, 0, statCap);
       d.styleXP.yotsu = (d.styleXP.yotsu || 0) + 10;
       if (d.styleXP.yotsu > 80 && d.sumoStyle !== 'yotsu') {
@@ -76,26 +78,28 @@ export function applyTraining(d, cmdId) {
         msgs.push('四つ相撲が身についた！');
       }
       msgs.push(`技術 +${gain}`);
+      checkSpecialMoveUnlock(d, 'yotsu', msgs);
       break;
     }
     case 'nage': {
-      const gain = personalityGain(d, 'tech', Math.round(rRange(5, 11) * dojoBonus * talentFactor));
+      const gain = personalityGain(d, 'tech', Math.round(rRange(3, 8) * dojoBonus * talentFactor));
       d.tech = clamp(d.tech + gain, 0, statCap);
       d.styleXP.tech = (d.styleXP.tech || 0) + 8;
       const wLoss = rRange(1, 2);
       d.weight = clamp(d.weight - wLoss, 60, 250);
       msgs.push(`技術 +${gain}、体重 -${wLoss}kg`);
+      checkSpecialMoveUnlock(d, 'tech', msgs);
       break;
     }
     case 'run': {
-      const gain = Math.round(rRange(5, 14) * dojoBonus);
+      const gain = Math.round(rRange(4, 10) * dojoBonus);
       d.maxStamina = clamp(d.maxStamina + gain, 0, 200);
       d.weight = clamp(d.weight - 1, 60, 250);
       msgs.push(`体力上限 +${gain}、体重 -1kg`);
       break;
     }
     case 'mental': {
-      const sGain = personalityGain(d, 'spirit', Math.round(rRange(8, 16) * dojoBonus * talentFactor));
+      const sGain = personalityGain(d, 'spirit', Math.round(rRange(4, 10) * dojoBonus * talentFactor));
       const mGain = personalityGain(d, 'motivation', rRange(5, 12));
       d.spirit     = clamp(d.spirit + sGain, 0, statCap);
       d.motivation = clamp(d.motivation + mGain, 0, 100);
@@ -120,7 +124,7 @@ export function applyTraining(d, cmdId) {
     }
     case 'group': {
       const lv = GS.facilities.dojo + 1;
-      const gain = personalityGain(d, 'power', Math.round(rRange(3, 6) * lv * talentFactor));
+      const gain = personalityGain(d, 'power', Math.round(rRange(2, 4) * lv * talentFactor));
       d.power  = clamp(d.power  + gain, 0, statCap);
       d.tech   = clamp(d.tech   + gain, 0, statCap);
       d.spirit = clamp(d.spirit + gain, 0, statCap);
@@ -199,6 +203,20 @@ export function applyTraining(d, cmdId) {
   healInjury(d);
 
   return { ok: true, msgs };
+}
+
+// ─── 必殺技の解放チェック ─────────────────────────
+function checkSpecialMoveUnlock(d, styleKey, msgs) {
+  const unlocks = SPECIAL_MOVE_UNLOCKS[styleKey];
+  if (!unlocks) return;
+  d.unlockedMoves = d.unlockedMoves || [];
+  const xp = d.styleXP[styleKey] || 0;
+  for (const move of unlocks) {
+    if (xp >= move.xp && !d.unlockedMoves.includes(move.id)) {
+      d.unlockedMoves.push(move.id);
+      msgs.unshift(`🌟 必殺技「${move.name}」を習得！`);
+    }
+  }
 }
 
 // ─── 怪我の回復 ──────────────────────────────────

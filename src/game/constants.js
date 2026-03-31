@@ -92,6 +92,73 @@ export const FACE_TYPES = [
 ];
 
 // ═══════════════════════════════════════════════════
+//  出身地
+// ═══════════════════════════════════════════════════
+export const BIRTHPLACES = [
+  '北海道', '東北', '関東', '中部', '関西', '中国四国', '九州', '海外',
+];
+
+// ═══════════════════════════════════════════════════
+//  相撲経験（バックグラウンド）
+// ═══════════════════════════════════════════════════
+export const BACKGROUNDS = [
+  {
+    id: 'student', name: '学生相撲経験あり', icon: '🎓',
+    desc: '初期ステ高め。才能の伸び代は少なめ。',
+    apply: (d) => { d.power += 15; d.tech += 15; d.talent = Math.max(50, d.talent - 8); },
+  },
+  {
+    id: 'social', name: '社会人相撲経験あり', icon: '🏢',
+    desc: '精神・やる気が高め。社会経験で場慣れしている。',
+    apply: (d) => { d.spirit += 20; d.motivation = Math.min(100, d.motivation + 15); },
+  },
+  {
+    id: 'fresh', name: '相撲未経験', icon: '🌱',
+    desc: '初期ステは低いが才能の伸び代が高め。ダイヤの原石。',
+    apply: (d) => { d.talent = Math.min(100, d.talent + 10); },
+  },
+];
+
+// ═══════════════════════════════════════════════════
+//  得意技（必殺技）解放テーブル
+// ═══════════════════════════════════════════════════
+// styleXPが閾値に達すると必殺技が解放される
+export const SPECIAL_MOVE_UNLOCKS = {
+  oshi: [
+    { xp: 80,  id: 'oshi_lv1', name: '鬼押し',   icon: '🔥',
+      desc: 'ねばり強い押し相撲。押し・重量型との相性UP',
+      winBonus: { oshi: 0.04, heavy: 0.03 } },
+    { xp: 180, id: 'oshi_lv2', name: '電車道',   icon: '🚂',
+      desc: '一直線の猛烈な押し込み。相手のスタイルに関わらず強い',
+      winBonus: { oshi: 0.06, yotsu: 0.04, tech: 0.03, heavy: 0.04 } },
+  ],
+  yotsu: [
+    { xp: 80,  id: 'yotsu_lv1', name: '鉄砲腰',  icon: '🦵',
+      desc: '盤石の組み合い。四つ・組み相撲に圧倒的強さ',
+      winBonus: { yotsu: 0.05, oshi: 0.02 } },
+    { xp: 180, id: 'yotsu_lv2', name: '万力腕',  icon: '💪',
+      desc: '一度組んだら離さない鉄腕。相手を封じ込める',
+      winBonus: { yotsu: 0.08, oshi: 0.04, heavy: 0.03 } },
+  ],
+  tech: [
+    { xp: 80,  id: 'tech_lv1', name: '技の宝庫', icon: '🎭',
+      desc: '豊富な技のバリエーション。重量型に特に強い',
+      winBonus: { tech: 0.05, heavy: 0.04 } },
+    { xp: 180, id: 'tech_lv2', name: '千変万化', icon: '🌀',
+      desc: 'どんな相手にも対応できる変幻自在の相撲',
+      winBonus: { tech: 0.07, heavy: 0.06, oshi: 0.03 } },
+  ],
+  heavy: [
+    { xp: 80,  id: 'heavy_lv1', name: '巌の如く', icon: '🗿',
+      desc: '重さで相手を押しつぶす。技巧型の攻めを封じる',
+      winBonus: { heavy: 0.05, tech: 0.04 } },
+    { xp: 180, id: 'heavy_lv2', name: '土俵の鬼', icon: '👹',
+      desc: '圧倒的な重さと圧力。四つ相撲さえ力でねじ伏せる',
+      winBonus: { heavy: 0.07, tech: 0.05, yotsu: 0.03 } },
+  ],
+};
+
+// ═══════════════════════════════════════════════════
 //  相撲スタイル
 // ═══════════════════════════════════════════════════
 export const SUMO_STYLES = [

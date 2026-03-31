@@ -2,6 +2,7 @@ import {
   BODY_TYPES, SUMO_STYLES, PERSONALITIES, NAME_PREFIX, NAME_SUFFIX,
   DIVISIONS, DIV_JONOKUCHI,
   SKIN_TONES, FACE_TYPES,
+  BACKGROUNDS, BIRTHPLACES,
   rRange, clamp,
 } from './constants.js';
 import { GS } from './state.js';
@@ -17,6 +18,8 @@ export function createDisciple(options = {}) {
 
   const skinTone = options.skinTone || SKIN_TONES[rRange(0, SKIN_TONES.length - 1)].id;
   const faceType = options.faceType || FACE_TYPES[rRange(0, FACE_TYPES.length - 1)].id;
+  const background = options.background || BACKGROUNDS[rRange(0, BACKGROUNDS.length - 1)].id;
+  const birthplace = options.birthplace || BIRTHPLACES[rRange(0, BIRTHPLACES.length - 1)];
 
   const talent  = options.talent  ?? rRange(50, 100);  // 秘めた才能（成長上限に影響）
   const baseAge = options.age     ?? rRange(15, 22);
@@ -46,6 +49,8 @@ export function createDisciple(options = {}) {
     bodyType,
     sumoStyle,
     personality,
+    background,
+    birthplace,
     power: initPower,
     tech: initTech,
     spirit: initSpirit,
@@ -76,8 +81,14 @@ export function createDisciple(options = {}) {
     skinTone,
     faceType,
     optimalWeight,
-    styleXP: { oshi: 0, yotsu: 0, tech: 0, heavy: 0 },
+    styleXP:      { oshi: 0, yotsu: 0, tech: 0, heavy: 0 },
+    unlockedMoves: [],   // 解放された必殺技IDリスト
+    statHistory:  [],    // [{bashoIdx, power, tech, spirit, divIdx, pos, wins, losses}]
   };
+
+  // 相撲経験によるボーナスを適用
+  const bg = BACKGROUNDS.find(b => b.id === background);
+  if (bg) bg.apply(d);
 
   return d;
 }

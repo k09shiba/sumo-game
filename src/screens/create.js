@@ -1,5 +1,5 @@
 import { GS, saveGame, addHistory } from '../game/state.js';
-import { BODY_TYPES, SUMO_STYLES, PERSONALITIES, SKIN_TONES, FACE_TYPES } from '../game/constants.js';
+import { BODY_TYPES, SUMO_STYLES, PERSONALITIES, SKIN_TONES, FACE_TYPES, BACKGROUNDS, BIRTHPLACES } from '../game/constants.js';
 import { createDisciple, createRival, randomName } from '../game/disciple.js';
 import { getMaxDisciples } from '../game/facility.js';
 import { renderCharacter, initCharRenderer } from '../render/charRenderer.js';
@@ -66,6 +66,29 @@ export function renderCreate() {
       </div>
 
       <div class="input-row">
+        <label>出身地</label>
+        <div class="birthplace-group" id="sel-birthplace">
+          ${BIRTHPLACES.map((bp, i) => `
+            <label class="bp-radio">
+              <input type="radio" name="birthplace" value="${bp}" ${i === 0 ? 'checked' : ''}>
+              <span>${bp}</span>
+            </label>`).join('')}
+        </div>
+      </div>
+
+      <div class="input-row">
+        <label>相撲経験</label>
+        <div class="radio-group" id="sel-background">
+          ${BACKGROUNDS.map(bg => `
+            <label class="radio-card">
+              <input type="radio" name="background" value="${bg.id}" ${bg.id === 'fresh' ? 'checked' : ''}>
+              <span class="rc-name">${bg.icon} ${bg.name}</span>
+              <span class="rc-desc">${bg.desc}</span>
+            </label>`).join('')}
+        </div>
+      </div>
+
+      <div class="input-row">
         <label>肌の色</label>
         <div class="skin-tone-group" id="sel-skintone">
           ${SKIN_TONES.map(st => `
@@ -112,7 +135,7 @@ export function renderCreate() {
   document.getElementById('btn-back-create').onclick = () => showScreen('title');
 
   // ラジオ変更時にプレビュー更新
-  document.querySelectorAll('input[name="bodytype"], input[name="style"], input[name="personality"], input[name="skintone"], input[name="facetype"]').forEach(el => {
+  document.querySelectorAll('input[name="bodytype"], input[name="style"], input[name="personality"], input[name="skintone"], input[name="facetype"], input[name="background"], input[name="birthplace"]').forEach(el => {
     el.addEventListener('change', updatePreview);
   });
 
@@ -129,10 +152,13 @@ function updatePreview() {
   const personality = document.querySelector('input[name="personality"]:checked')?.value || 'earnest';
   const skinTone    = document.querySelector('input[name="skintone"]:checked')?.value  || 'fair';
   const faceType    = document.querySelector('input[name="facetype"]:checked')?.value  || 'round';
+  const background  = document.querySelector('input[name="background"]:checked')?.value  || 'fresh';
+  const birthplace  = document.querySelector('input[name="birthplace"]:checked')?.value  || BIRTHPLACES[0];
 
-  previewD = createDisciple({ name, bodyType, sumoStyle: style, personality, skinTone, faceType, quality: 2 });
+  previewD = createDisciple({ name, bodyType, sumoStyle: style, personality, skinTone, faceType, background, birthplace, quality: 2 });
   renderCharacter(previewD);
 
+  const bg = BACKGROUNDS.find(b => b.id === background);
   const statsEl = document.getElementById('preview-stats');
   if (statsEl) {
     statsEl.innerHTML = `
@@ -140,7 +166,8 @@ function updatePreview() {
       <div class="pv-row"><span>技術</span><b>${previewD.tech}</b></div>
       <div class="pv-row"><span>精神</span><b>${previewD.spirit}</b></div>
       <div class="pv-row"><span>体重</span><b>${previewD.weight}kg</b></div>
-      <div class="pv-row"><span>才能</span><b>${previewD.talent}</b></div>`;
+      <div class="pv-row"><span>才能</span><b>${previewD.talent}</b></div>
+      <div class="pv-row"><span>出身</span><b>${birthplace}</b></div>`;
   }
 }
 
@@ -152,6 +179,8 @@ function doCreate() {
   const personality = document.querySelector('input[name="personality"]:checked')?.value || 'earnest';
   const skinTone    = document.querySelector('input[name="skintone"]:checked')?.value  || 'fair';
   const faceType    = document.querySelector('input[name="facetype"]:checked')?.value  || 'round';
+  const background  = document.querySelector('input[name="background"]:checked')?.value  || 'fresh';
+  const birthplace  = document.querySelector('input[name="birthplace"]:checked')?.value  || BIRTHPLACES[0];
   const stable      = document.getElementById('inp-stable')?.value.trim();
 
   if (!name) { toast('しこ名を入力してください！'); return; }
@@ -165,7 +194,7 @@ function doCreate() {
     GS.stableName = stable;
   }
 
-  const d = createDisciple({ name, bodyType, sumoStyle: style, personality, skinTone, faceType });
+  const d = createDisciple({ name, bodyType, sumoStyle: style, personality, skinTone, faceType, background, birthplace });
   GS.disciples.push(d);
 
   // ライバル生成（初回のみ）

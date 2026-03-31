@@ -904,3 +904,110 @@ body {
   font-size: 14px;
 }
 .btn-settings:hover { border-color: #d4a800; }
+
+/* ── 出身地選択 ── */
+.birthplace-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.bp-radio {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.bp-radio input { display: none; }
+.bp-radio span {
+  padding: 4px 10px;
+  border: 1px solid #c8a060;
+  border-radius: var(--radius);
+  background: var(--bg2);
+  transition: all 0.15s;
+}
+.bp-radio input:checked + span {
+  background: var(--red);
+  color: #fff;
+  border-color: var(--red);
+}
+
+/* ── 出身地・必殺技バッジ ── */
+.birthplace-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  background: #2a4080;
+  color: #b8d0ff;
+  margin-right: 3px;
+}
+.move-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  background: #5a2080;
+  color: #e8c8ff;
+  margin-right: 3px;
+}
+
+/* ── 成長グラフ ── */
+.growth-graph-section { margin-bottom: 12px; }
+.grow-disciple {
+  background: var(--bg2);
+  border: 1px solid #c8a060;
+  border-radius: var(--radius);
+  padding: 10px;
+  margin-bottom: 10px;
+}
+.grow-disc-name {
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: var(--fg1);
+}
+.grow-chart { display: flex; flex-direction: column; gap: 4px; }
+.grow-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 40px;
+}
+.grow-label {
+  width: 18px;
+  font-size: 11px;
+  font-weight: bold;
+  flex-shrink: 0;
+  text-align: center;
+}
+.grow-bars {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 36px;
+  background: rgba(0,0,0,0.08);
+  border-radius: 3px;
+  padding: 2px;
+}
+.grow-bar {
+  flex: 1;
+  min-width: 6px;
+  border-radius: 2px 2px 0 0;
+  transition: height 0.3s ease;
+  cursor: pointer;
+}
+.grow-val {
+  width: 28px;
+  font-size: 11px;
+  text-align: right;
+  color: var(--fg2);
+  flex-shrink: 0;
+}
+.grow-legend {
+  font-size: 10px;
+  color: var(--gray);
+  margin-top: 4px;
+  text-align: right;
+}

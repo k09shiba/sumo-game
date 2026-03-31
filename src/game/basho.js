@@ -1,7 +1,7 @@
 import {
   DIVISIONS, DIV_JURYO, DIV_MAKUNOUCHI, DIV_YOKOZUNA,
   STYLE_MATCHUP, CONDITIONS, WAZA, DRAMA_EVENTS, BASHO_NAMES,
-  INJURY_PARTS,
+  INJURY_PARTS, SPECIAL_MOVE_UNLOCKS,
   rRange, clamp,
 } from './constants.js';
 import { GS } from './state.js';
@@ -185,6 +185,21 @@ function calcWinProb(d, opponent) {
   if (GS.activeItems?.['mawashi_sp']) prob += 0.03;
   if (GS.activeItems?.['goma'] && prob < 0.4) prob += 0.05;
   prob += (d.motivation - 60) * 0.001;
+
+  // 必殺技ボーナス
+  if (d.unlockedMoves?.length > 0) {
+    const opStyle = opponent.sumoStyle || 'oshi';
+    for (const moveId of d.unlockedMoves) {
+      // どのスタイルの必殺技か特定
+      for (const [styleKey, moves] of Object.entries(SPECIAL_MOVE_UNLOCKS)) {
+        const move = moves.find(m => m.id === moveId);
+        if (move && move.winBonus[opStyle] != null) {
+          prob += move.winBonus[opStyle];
+          break;
+        }
+      }
+    }
+  }
 
   return clamp(prob, 0.04, 0.96);
 }

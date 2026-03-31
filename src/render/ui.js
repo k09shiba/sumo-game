@@ -3,6 +3,7 @@ import {
   DIVISIONS, CONDITIONS, BODY_TYPES, SUMO_STYLES, PERSONALITIES, KESHO_MAWASHI,
   TRAINING_CMDS, FACILITY_DATA,
   SPECIAL_TRAINING, ITEMS, PRESTIGE_ACTIONS, SCOUT_ACTIONS, SPONSORS,
+  SPECIAL_MOVE_UNLOCKS,
 } from '../game/constants.js';
 import { rankLabel, weightStatus } from '../game/disciple.js';
 import { renderCharacter, animateBounce } from './charRenderer.js';
@@ -53,9 +54,16 @@ export function refreshTrainTab() {
   const persEl = document.getElementById('tr-personality');
   if (persEl) {
     const pers = PERSONALITIES.find(p => p.id === d.personality);
-    if (pers) {
-      persEl.textContent = `${pers.icon} ${pers.name}`;
+    let persText = pers ? `${pers.icon} ${pers.name}` : '';
+    // 必殺技表示（解放済みの最上位技を1つ表示）
+    if (d.unlockedMoves?.length > 0) {
+      const lastMoveId = d.unlockedMoves[d.unlockedMoves.length - 1];
+      for (const moves of Object.values(SPECIAL_MOVE_UNLOCKS)) {
+        const move = moves.find(m => m.id === lastMoveId);
+        if (move) { persText += `　🌟${move.name}`; break; }
+      }
     }
+    persEl.textContent = persText;
   }
 
   // 稽古残り回数
@@ -195,6 +203,8 @@ export function renderDiscipleList(containerEl) {
         <div class="dc-info">
           ${d.injuryLevel >= 1 ? `<span class="inj-badge">🤕${d.injuryPart ? d.injuryPart + 'の' : ''}${d.injuryLevel >= 2 ? '重傷' : '軽傷'}</span>` : ''}
           ${d.divIdx >= 4 ? `<span class="kanto-badge">関取</span>` : ''}
+          ${d.birthplace ? `<span class="birthplace-badge">${d.birthplace}</span>` : ''}
+          ${d.unlockedMoves?.length > 0 ? `<span class="move-badge">🌟必殺技×${d.unlockedMoves.length}</span>` : ''}
         </div>
         <div class="dc-actions">
           <button class="btn-sm" onclick="event.stopPropagation(); setFocusAndTab(${i}, 'train')">育成</button>
@@ -307,18 +317,61 @@ function renderSpecialTraining(containerEl) {
 // ─── 歴史タブ ────────────────────────────────────
 export function renderHistoryTab(containerEl) {
   if (!containerEl) return;
-  containerEl.innerHTML = '<h3 class="section-title">部屋の歴史</h3>';
-  if (!GS.history || GS.history.length === 0) {
-    containerEl.innerHTML += '<div class="empty-msg">まだ記録がありません。</div>';
-    return;
+  containerEl.innerHTML = '';
+
+  // 成長グラフセクション
+  const activeDisciples = GS.disciples.filter(d => !d.retired && d.statHistory?.length > 1);
+  if (activeDisciples.length > 0) {
+    const graphSection = document.createElement('div');
+    graphSection.className = 'growth-graph-section';
+    graphSection.innerHTML = '<h3 class="section-title">📈 成長記録</h3>';
+
+    for (const d of activeDisciples) {
+      const hist = d.statHistory.slice(-10); // 直近10場所
+      const maxStat = Math.max(...hist.map(h => Math.max(h.power, h.tech, h.spirit)), 10);
+
+      const chartRows = [
+        { key: 'power',  label: '筋', col: '#c0392b' },
+        { key: 'tech',   label: '技', col: '#2980b9' },
+        { key: 'spirit', label: '精', col: '#8e44ad' },
+      ];
+
+      const chartHTML = chartRows.map(row => {
+        const bars = hist.map(h => {
+          const pct = Math.round((h[row.key] / maxStat) * 100);
+          return `<div class="grow-bar" style="height:${pct}%;background:${row.col}" title="${h[row.key]}"></div>`;
+        }).join('');
+        return `<div class="grow-row"><span class="grow-label" style="color:${row.col}">${row.label}</span><div class="grow-bars">${bars}</div><span class="grow-val">${hist[hist.length-1][row.key]}</span></div>`;
+      }).join('');
+
+      const rankLabels = hist.map(h => `${DIVISIONS[h.divIdx].short}`).join('→');
+
+      const discipleHtml = `
+        <div class="grow-disciple">
+          <div class="grow-disc-name">${d.name}（${rankLabels}）</div>
+          <div class="grow-chart">${chartHTML}</div>
+          <div class="grow-legend">直近${hist.length}場所の推移（最大値:${maxStat}）</div>
+        </div>`;
+      graphSection.innerHTML += discipleHtml;
+    }
+    containerEl.appendChild(graphSection);
   }
-  const list = [...GS.history].reverse();
-  containerEl.innerHTML += list.map(h => `
-    <div class="history-entry">
-      <span class="h-icon">${h.icon || '📌'}</span>
-      <span class="h-date">${h.date}</span>
-      <span class="h-text">${h.text}</span>
-    </div>`).join('');
+
+  // 部屋の歴史ログ
+  const histSection = document.createElement('div');
+  histSection.innerHTML = '<h3 class="section-title">部屋の歴史</h3>';
+  if (!GS.history || GS.history.length === 0) {
+    histSection.innerHTML += '<div class="empty-msg">まだ記録がありません。</div>';
+  } else {
+    const list = [...GS.history].reverse();
+    histSection.innerHTML += list.map(h => `
+      <div class="history-entry">
+        <span class="h-icon">${h.icon || '📌'}</span>
+        <span class="h-date">${h.date}</span>
+        <span class="h-text">${h.text}</span>
+      </div>`).join('');
+  }
+  containerEl.appendChild(histSection);
 }
 
 // ─── メッセージログ ──────────────────────────────
