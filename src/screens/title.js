@@ -1,5 +1,5 @@
 import { hasSaveData, loadGame } from '../game/state.js';
-import { toast } from '../render/modal.js';
+import { toast, queueModal, processModalQueue } from '../render/modal.js';
 import { showScreen } from './index.js';
 
 // ─── タイトル画面の描画 ───────────────────────────
@@ -30,9 +30,30 @@ export function renderTitle() {
     </div>`;
 
   document.getElementById('btn-newgame')?.addEventListener('click', async () => {
-    const { resetGame } = await import('../game/state.js');
-    resetGame();
-    await showScreen('create');
+    if (hasSaveData()) {
+      // セーブデータがある場合は確認ダイアログ
+      queueModal({
+        em: '⚠',
+        title: 'セーブデータを削除しますか？',
+        text: '現在のセーブデータはすべて消えます。\n本当に新しくはじめますか？',
+        choices: [
+          {
+            label: '🗑 消してはじめる', cls: 'btn-red',
+            fn: async () => {
+              const { resetGame } = await import('../game/state.js');
+              resetGame();
+              await showScreen('create');
+            },
+          },
+          { label: 'キャンセル', fn: () => {} },
+        ],
+      });
+      processModalQueue();
+    } else {
+      const { resetGame } = await import('../game/state.js');
+      resetGame();
+      await showScreen('create');
+    }
   });
 
   document.getElementById('btn-continue')?.addEventListener('click', async () => {
