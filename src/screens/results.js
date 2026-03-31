@@ -1,0 +1,293 @@
+import { GS, saveGame, addHistory } from '../game/state.js';
+import {
+  DIVISIONS, DIV_JURYO, DIV_MAKUNOUCHI, DIV_YOKOZUNA, KESHO_MAWASHI,
+} from '../game/constants.js';
+import { calcBashoIncome, getCurrentBashoInfo, simulateRivalBasho, advanceMonth } from '../game/basho.js';
+import { applyRankChange, drainEventQueue, checkRetirementAge } from '../game/rankSystem.js';
+import { rollRandomEvents, checkAnnualAwards, applyFacilityEffects, updateMotivation } from '../game/events.js';
+import { retireDisciple } from '../game/facility.js';
+import { queueModal, processModalQueue, toast } from '../render/modal.js';
+import { showScreen } from './index.js';
+
+// ─── 結果画面描画 ────────────────────────────────
+export function renderResults() {
+  const el = document.getElementById('screen-results');
+
+  // 場所後の全処理を実行
+  const resultsData = runPostBashoProcessing();
+
+  const bashoName = getCurrentBashoInfo().name;
+
+  el.innerHTML = `
+    <div class="results-wrap">
+      <div class="results-header">
+        <h2>場所結果発表</h2>
+        <div>令和${GS.year}年　${bashoName}</div>
+        <button class="btn-sm btn-save" id="res-save-btn">💾</button>
+      </div>
+
+      <div id="results-cards">
+        ${resultsData.map(r => renderResultCard(r)).join('')}
+      </div>
+
+      <div class="income-section" id="income-section"></div>
+      <div id="annual-award-section"></div>
+
+      <div style="text-align:center;margin-top:16px;">
+        <button class="btn btn-red btn-big" id="btn-back-to-main">育成に戻る →</button>
+      </div>
+    </div>`;
+
+  // 収入計算・表示
+  const income = calcBashoIncome();
+  GS.ryo = (GS.ryo || 0) + income;
+  document.getElementById('income-section').innerHTML = `
+    <div class="income-row">
+      <span>場所収入</span>
+      <strong>+${income}両</strong>
+    </div>
+    <div class="income-row">
+      <span>所持金</span>
+      <strong>${GS.ryo}両</strong>
+    </div>`;
+
+  // ライバルシミュレーション
+  simulateRivalBasho();
+
+  // 月進行
+  advanceMonth();
+
+  // 年間表彰（6場所ごと）
+  const annual = checkAnnualAwards();
+  if (annual) {
+    GS.ryo += annual.bonus;
+    document.getElementById('annual-award-section').innerHTML = `
+      <div class="annual-award">
+        🏆 年間最多勝：${annual.name}（${annual.wins}勝）← ボーナス+${annual.bonus}両！
+      </div>`;
+  }
+
+  saveGame();
+
+  // イベントキューを処理（昇進モーダルなど）
+  processModalQueue();
+
+  document.getElementById('btn-back-to-main')?.addEventListener('click', () => {
+    GS.phase = 'main';
+    showScreen('main');
+  });
+  document.getElementById('res-save-btn')?.addEventListener('click', () => {
+    saveGame(); toast('セーブしました！');
+  });
+}
+
+// ─── 場所後処理のメイン ──────────────────────────
+function runPostBashoProcessing() {
+  const resultsData = [];
+
+  for (const d of GS.disciples) {
+    if (d.retired) continue;
+
+    const wins   = d.wins   || 0;
+    const losses = d.losses || 0;
+    const div    = DIVISIONS[d.divIdx];
+
+    // やる気更新
+    updateMotivation(d);
+
+    // 番付変動
+    const oldDivIdx = d.divIdx;
+    const oldPos    = d.pos;
+    applyRankChange(d, wins);
+
+    // 昇進・警告イベントを処理
+    const events = drainEventQueue();
+    processPromotionEvents(events, d);
+
+    // 優勝チェック（d.yushoRecord の最後のエントリが今場所か）
+    const isYusho = d.yushoRecord?.some(y => y.bashoIdx === GS.bashoCount) ?? false;
+
+    // 三賞
+    const sansho = d.sanshoRecord?.slice(-1) || [];
+
+    // 引退年齢チェック
+    const retireStatus = checkRetirementAge(d);
+    if (retireStatus === 'forced') {
+      handleForcedRetire(d);
+    } else if (retireStatus === 'advisory' && !d._advisoryShown) {
+      d._advisoryShown = true;
+      queueModal({
+        em: '🎋', title: `${d.name}引退勧告`,
+        text: `${d.name}は${d.age}歳。\n引退を考える年齢です。\n「続ける」場合、毎場所ステータスが低下します。`,
+        choices: [
+          { label: 'まだ続ける', fn: () => {} },
+          { label: '引退する',  fn: () => retireDisciple(d) },
+        ],
+      });
+    }
+
+    // ランダムイベント（場所後）
+    const randEvs = rollRandomEvents(d);
+    randEvs.forEach(ev => queueModal({ em: ev.icon, title: ev.title, text: ev.text }));
+
+    resultsData.push({
+      disciple: d, wins, losses, oldDivIdx, oldPos,
+      newDivIdx: d.divIdx, newPos: d.pos, isYusho, sansho,
+    });
+  }
+
+  applyFacilityEffects();
+  return resultsData;
+}
+
+// ─── 昇進イベントのモーダル表示 ─────────────────
+function processPromotionEvents(events, d) {
+  for (const ev of events) {
+    switch (ev.type) {
+      case 'juryo_promotion':
+        queueModal({
+          em: '🎊', title: `${d.name} 十両昇進！`,
+          text: `幕下から関取の仲間入り！\n大銀杏が結えるようになりました！\n化粧まわしをつけて土俵入りができます！`,
+          choices: [{
+            label: '🎽 化粧まわしを選ぶ',
+            noQueue: true,
+            fn: () => showKeshoSelect(d, () => showRename(d, '十両')),
+          }],
+        });
+        break;
+
+      case 'makunouchi_promotion':
+        queueModal({
+          em: '🎊', title: `${d.name} 幕内昇進！`,
+          text: `ついに幕内の舞台へ！\n全国のファンが注目する番付です！`,
+          choices: [{ label: '🎉 祝！', fn: () => showRename(d, '幕内') }],
+        });
+        break;
+
+      case 'ozeki_promotion':
+        queueModal({
+          em: '🏅', title: `${d.name} 大関昇進！`,
+          text: `相撲の最高位・大関に昇進！\n横綱への道が見えてきた！`,
+          choices: [{ label: '🎉 祝！', fn: () => showRename(d, '大関') }],
+        });
+        break;
+
+      case 'yokozuna_promotion':
+        queueModal({
+          em: '👑', title: `横綱審議！${d.name}が候補に`,
+          text: `横綱審議委員会が開催されます。\n来場所の活躍次第で横綱昇進が決まる！`,
+        });
+        break;
+
+      case 'yokozuna_promotion_confirmed':
+        queueModal({
+          em: '👑', title: `${d.name} 横綱昇進！！！`,
+          text: `相撲の最高位・横綱に昇進！\n土俵の神として永遠に語り継がれよう！`,
+          choices: [{ label: '👑 横綱として立つ！', fn: () => showRename(d, '横綱') }],
+        });
+        break;
+
+      case 'ozeki_warning':
+        queueModal({ em: '⚠', title: `${d.name}大関取りこぼし`,
+          text: `負け越し。もう1場所負け越すと大関陥落の危機！` });
+        break;
+
+      case 'ozeki_fall':
+        queueModal({ em: '😔', title: `${d.name}大関陥落...`,
+          text: `2場所連続負け越しで大関から陥落。三役に落ちてしまった。` });
+        break;
+
+      case 'yokozuna_warning':
+        queueModal({ em: '⚠', title: `${d.name}横綱として不甲斐ない`,
+          text: `横綱として負け越し（${d.yokozunaWarning}場所連続）。\n3場所連続で引退勧告が出ます。` });
+        break;
+
+      case 'yokozuna_retire_forced':
+        queueModal({
+          em: '🎋', title: `${d.name}横綱引退勧告`,
+          text: `3場所連続負け越しにより引退勧告が出ました。`,
+          choices: [{ label: '引退する', fn: () => retireDisciple(d) }],
+        });
+        break;
+    }
+  }
+}
+
+// ─── 化粧まわし選択 ──────────────────────────────
+function showKeshoSelect(d, next) {
+  queueModal({
+    em: '🎽', title: '化粧まわしを選ぼう！',
+    text: '関取の証！晴れ舞台を彩る\n化粧まわしを選んでください。\n（後から変更できます）',
+    choices: KESHO_MAWASHI.map(km => ({
+      label: `🎽 ${km.name}（${km.desc}）`,
+      fn: () => { d.keshoMawashi = km.id; saveGame(); next?.(); },
+    })),
+  });
+}
+
+// ─── しこ名変更 ──────────────────────────────────
+function showRename(d, occasion) {
+  queueModal({
+    em: '✏', title: `${d.name}のしこ名変更`,
+    text: `${occasion}昇進を機に、しこ名を変更しますか？`,
+    type: 'input',
+    defaultValue: d.name,
+    okLabel: '改名する',
+    skipLabel: 'このままでいい',
+    onOk: (newName) => {
+      if (newName && newName !== d.name) {
+        d.nameHistory = d.nameHistory || [];
+        d.nameHistory.push({ name: d.name, occasion });
+        const old = d.name;
+        d.name = newName;
+        addHistory({ icon: '✏', text: `${old} → ${d.name}に改名（${occasion}）` });
+        saveGame();
+        toast(`${d.name}に改名しました！`);
+      }
+    },
+    onSkip: () => {},
+  });
+}
+
+// ─── 強制引退処理 ────────────────────────────────
+function handleForcedRetire(d) {
+  queueModal({
+    em: '🎋', title: `${d.name} 定年引退`,
+    text: `${d.name}は${d.age}歳。現役を引退しました。\nお疲れ様でした！`,
+    onOk: () => retireDisciple(d),
+  });
+}
+
+// ─── 結果カードHTML ──────────────────────────────
+function renderResultCard(r) {
+  const d    = r.disciple;
+  const div  = DIVISIONS[d.divIdx];
+  const oldD = DIVISIONS[r.oldDivIdx];
+
+  let rankChange;
+  if (r.newDivIdx !== r.oldDivIdx) {
+    rankChange = `${oldD.short}${r.oldPos}枚目 → <b>${div.short}${d.pos}枚目</b>`;
+  } else if (r.newPos < r.oldPos) {
+    rankChange = `${div.short}${r.oldPos}枚目 → <b>${div.short}${d.pos}枚目</b>（↑昇）`;
+  } else if (r.newPos > r.oldPos) {
+    rankChange = `${div.short}${r.oldPos}枚目 → ${div.short}${d.pos}枚目（↓降）`;
+  } else {
+    rankChange = `${div.short}${d.pos}枚目（変動なし）`;
+  }
+
+  return `
+    <div class="result-card ${r.isYusho ? 'yusho-card' : ''}">
+      <div class="rc-name">${r.isYusho ? '🏆 ' : ''}${d.name}</div>
+      <div class="rc-record">
+        <span class="rc-wins">${r.wins}勝</span>
+        <span class="rc-losses">${r.losses}敗</span>
+        <span class="rc-judge ${r.wins > r.losses ? 'kachi' : r.wins < r.losses ? 'make' : 'gobu'}">
+          ${r.wins > r.losses ? '勝ち越し' : r.wins < r.losses ? '負け越し' : '五分'}
+        </span>
+      </div>
+      <div class="rc-rank-change">${rankChange}</div>
+      ${r.isYusho ? `<div class="rc-yusho">🏆 ${DIVISIONS[r.oldDivIdx].name}優勝！</div>` : ''}
+      ${r.sansho?.length > 0 ? `<div class="rc-sansho">🎖 ${r.sansho.join('・')}</div>` : ''}
+      ${d.injuryLevel >= 1 ? `<div class="rc-inj">🤕 怪我：${d.injuryLevel >= 2 ? '重傷' : '軽傷'}</div>` : ''}
+    </div>`;
+}
