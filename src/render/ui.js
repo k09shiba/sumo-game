@@ -1,8 +1,8 @@
 import { GS } from '../game/state.js';
 import {
-  DIVISIONS, CONDITIONS, BODY_TYPES, SUMO_STYLES, KESHO_MAWASHI,
+  DIVISIONS, CONDITIONS, BODY_TYPES, SUMO_STYLES, PERSONALITIES, KESHO_MAWASHI,
   TRAINING_CMDS, FACILITY_DATA,
-  SPECIAL_TRAINING, ITEMS, PRESTIGE_ACTIONS, SCOUT_ACTIONS,
+  SPECIAL_TRAINING, ITEMS, PRESTIGE_ACTIONS, SCOUT_ACTIONS, SPONSORS,
 } from '../game/constants.js';
 import { rankLabel, weightStatus } from '../game/disciple.js';
 import { renderCharacter, animateBounce } from './charRenderer.js';
@@ -42,6 +42,23 @@ export function refreshTrainTab() {
     const cond = CONDITIONS[d.conditionIdx ?? 2];
     condEl.textContent  = cond.label;
     condEl.style.color  = cond.color;
+  }
+
+  // 性格特性
+  const persEl = document.getElementById('tr-personality');
+  if (persEl) {
+    const pers = PERSONALITIES.find(p => p.id === d.personality);
+    if (pers) {
+      persEl.textContent = `${pers.icon} ${pers.name}`;
+    }
+  }
+
+  // 稽古残り回数
+  const turnsEl = document.getElementById('train-turns-info');
+  if (turnsEl) {
+    const turns = GS.trainTurnsLeft ?? 10;
+    const color = turns <= 2 ? '#e74c3c' : turns <= 4 ? '#e67e22' : '#27ae60';
+    turnsEl.innerHTML = `<span class="turns-label">稽古残り</span> <span class="turns-count" style="color:${color}">${turns}</span><span class="turns-label"> / 10回</span>`;
   }
 
   // ステータスバー
@@ -333,4 +350,66 @@ function showKeshoChangeModal(idx) {
 // ─── 番付ラベル（helper） ──────────────────────────
 export function divLabel(d) {
   return rankLabel(d);
+}
+
+// ─── 番付表タブ ──────────────────────────────────
+export function renderBanzukeTab(containerEl) {
+  if (!containerEl) return;
+  const el = containerEl;
+  el.innerHTML = `<h3 class="section-title">番付表 ─ 令和${GS.year}年${GS.month}月</h3>`;
+
+  const myDisciples = GS.disciples.filter(d => !d.retired);
+  const rival = GS.rival;
+
+  // スポンサー表示
+  if (GS.sponsors && GS.sponsors.length > 0) {
+    const sDiv = document.createElement('div');
+    sDiv.className = 'sponsor-list';
+    sDiv.innerHTML = `<h4 class="sub-title">現スポンサー（${GS.sponsors.length}社）</h4>`;
+    sDiv.innerHTML += GS.sponsors.map(s =>
+      `<div class="sponsor-row"><span>${s.icon} ${s.name}</span><span class="sponsor-income">+${s.income}両/場所</span></div>`
+    ).join('');
+    el.appendChild(sDiv);
+  }
+
+  // 番付を上位から表示
+  for (let divIdx = DIVISIONS.length - 1; divIdx >= 0; divIdx--) {
+    const div = DIVISIONS[divIdx];
+    const discInDiv = myDisciples.filter(d => d.divIdx === divIdx);
+    const rivalInDiv = rival && rival.divIdx === divIdx;
+
+    if (discInDiv.length === 0 && !rivalInDiv) {
+      // 所属なし：簡易表示
+      const sec = document.createElement('div');
+      sec.className = 'banzuke-section banzuke-empty-section';
+      sec.innerHTML = `<div class="banzuke-div-name">${div.name}</div><div class="banzuke-no-member">（所属力士なし）</div>`;
+      el.appendChild(sec);
+      continue;
+    }
+
+    const sec = document.createElement('div');
+    sec.className = 'banzuke-section';
+    sec.innerHTML = `<div class="banzuke-div-name">${div.name}</div>`;
+
+    // プレイヤーの弟子 + ライバルをposition順にソート
+    const wrestlers = [
+      ...discInDiv.map(d => ({ name: d.name, pos: d.pos, isPlayer: true, d })),
+      ...(rivalInDiv ? [{ name: rival.name, pos: rival.pos, isRival: true }] : []),
+    ].sort((a, b) => a.pos - b.pos);
+
+    wrestlers.forEach(w => {
+      const isActive = w.isPlayer && GS.focusIdx === GS.disciples.indexOf(w.d);
+      const badge = w.isPlayer ? (isActive ? '⭐' : '★') : '⚔';
+      const cls = w.isPlayer ? 'banzuke-player' + (isActive ? ' banzuke-focus' : '') : 'banzuke-rival';
+      const wins = w.isPlayer ? `${w.d.wins}勝${w.d.losses}敗` : '';
+      sec.innerHTML += `
+        <div class="banzuke-row ${cls}">
+          <span class="banzuke-pos">${div.name}${w.pos}枚目</span>
+          <span class="banzuke-name">${badge} ${w.name}</span>
+          ${w.isPlayer ? `<span class="banzuke-record">${wins}</span>` : '<span class="banzuke-rival-badge">ライバル</span>'}
+        </div>`;
+    });
+
+    el.appendChild(sec);
+  }
 }

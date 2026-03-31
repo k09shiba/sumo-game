@@ -65,9 +65,10 @@ export const NAME_SUFFIX = [
 //  体型タイプ
 // ═══════════════════════════════════════════════════
 export const BODY_TYPES = [
-  { id: 'anko',   name: 'あんこ型', desc: '重量・安定型。体重が乗った相撲。'    },
-  { id: 'shohei', name: '小兵型',   desc: '素早さと技で勝負。機動力が高い。'    },
-  { id: 'muscle', name: '筋肉型',   desc: '筋力で圧倒。スピードと爆発力。'      },
+  { id: 'anko',    name: 'あんこ型', desc: '重量・安定型。体重が乗った相撲。'        },
+  { id: 'shohei',  name: '小兵型',   desc: '素早さと技で勝負。機動力が高い。'        },
+  { id: 'muscle',  name: '筋肉型',   desc: '筋力で圧倒。スピードと爆発力。'          },
+  { id: 'kicchin', name: '細身型',   desc: '技術が伸びやすく動きが速い。体重は軽め。'},
 ];
 
 // ═══════════════════════════════════════════════════
@@ -78,6 +79,20 @@ export const SUMO_STYLES = [
   { id: 'yotsu',  name: '四つ相撲', desc: '組んで勝つ相撲',       strong: 'oshi',  weak: 'tech'   },
   { id: 'tech',   name: '技巧派',   desc: '引き・はたきが得意',   strong: 'yotsu', weak: 'oshi'   },
   { id: 'heavy',  name: '重量型',   desc: '体重と圧力で押し込む', strong: 'tech',  weak: null     },
+];
+
+// ═══════════════════════════════════════════════════
+//  性格特性
+// ═══════════════════════════════════════════════════
+export const PERSONALITIES = [
+  { id: 'earnest',   name: '努力家', icon: '💪',
+    desc: '稽古効果が常に+25%。コツコツ積み上げる堅実型。' },
+  { id: 'genius',    name: '天才肌', icon: '✨',
+    desc: '稽古にムラがあるが大爆発もある。成長が読めない型。' },
+  { id: 'spiritual', name: '精神型', icon: '🧘',
+    desc: '精神・やる気の伸びが+50%。本番の場所で真価を発揮。' },
+  { id: 'technical', name: '技巧派', icon: '🔮',
+    desc: '技術系稽古の効果が+50%。細かい技を磨くのが得意。' },
 ];
 
 // スタイル相性ボーナス
@@ -210,6 +225,22 @@ export const SCOUT_ACTIONS = [
 ];
 
 // ═══════════════════════════════════════════════════
+//  スポンサー
+// ═══════════════════════════════════════════════════
+export const SPONSORS = [
+  { id: 'yamada',    name: '山田商会',   income: 40,  icon: '🏪',
+    desc: '地元商店街の熱烈な後援', minDiv: 0 },
+  { id: 'toyo',      name: '東洋建設',   income: 70,  icon: '🏗',
+    desc: '大手建設会社の本格スポンサー', minDiv: 3 },
+  { id: 'daikokuya', name: '大黒屋',     income: 55,  icon: '🎪',
+    desc: '老舗デパートの冠スポンサー', minDiv: 2 },
+  { id: 'kokusen',   name: '国千食品',   income: 90,  icon: '🍜',
+    desc: '食品メーカーの大口支援', minDiv: 4 },
+  { id: 'fujitv',    name: '富士テレビ', income: 120, icon: '📺',
+    desc: 'テレビ局の番組スポンサー', minDiv: 5 },
+];
+
+// ═══════════════════════════════════════════════════
 //  稽古コマンド
 // ═══════════════════════════════════════════════════
 export const TRAINING_CMDS = [
@@ -271,6 +302,54 @@ export const RANDOM_EVENTS = [
     text: (d) => `${d.name}がぐっすり眠れた。体の回復が早い！`,
     apply: (d) => { d.stamina = Math.min(d.maxStamina, d.stamina + 30); d.conditionIdx = Math.min(4, d.conditionIdx + 1); },
   },
+  {
+    id: 'sensei_guidance', prob: 0.05, icon: '🧑‍🏫',
+    title: '師匠の特訓',
+    text: (d) => `師匠が${d.name}に特別稽古をつけてくれた！全能力が大幅に伸びた！`,
+    apply: (d) => { d.power += rRange(5,12); d.tech += rRange(5,12); d.spirit += rRange(3,8); },
+  },
+  {
+    id: 'muscle_growth', prob: 0.05, icon: '💪',
+    title: '肉体強化',
+    text: (d) => `${d.name}の体が一回り大きくなった！筋力がぐんと伸びた！`,
+    apply: (d) => { d.power += rRange(8,15); d.weight = Math.min(250, d.weight + rRange(2,5)); },
+  },
+  {
+    id: 'magazine_feature', prob: 0.04, icon: '📰',
+    title: '雑誌取材',
+    text: (d) => `相撲雑誌の取材を受けた！${d.name}のやる気が大きく上がった！`,
+    apply: (d) => { d.motivation = Math.min(100, d.motivation + 20); d.spirit += rRange(3,8); },
+  },
+  {
+    id: 'morning_training', prob: 0.05, icon: '🌅',
+    title: '早朝特訓の気づき',
+    text: (d) => `${d.name}が夜明けの稽古で重要な気づきを得た！技術と精神が伸びた！`,
+    apply: (d) => { d.tech += rRange(8,15); d.spirit += rRange(5,10); },
+  },
+  {
+    id: 'rival_spurred', prob: 0.05, icon: '⚔',
+    title: 'ライバルに刺激される',
+    text: (d) => `ライバルの活躍を聞いて${d.name}が奮起した！やる気が急上昇！`,
+    apply: (d) => { d.motivation = Math.min(100, d.motivation + 25); d.spirit += rRange(5,10); },
+  },
+  {
+    id: 'injury_heavy', prob: 0.03, icon: '🤕',
+    title: '重傷',
+    text: (d) => `${d.name}が稽古中に重い怪我をした。無理は禁物！`,
+    apply: (d) => { d.injuryLevel = 2; },
+  },
+  {
+    id: 'camp_training', prob: 0.04, icon: '⛺',
+    title: '合宿稽古',
+    text: (d) => `${d.name}が他部屋との合宿稽古に参加！全能力と気力が上がった！`,
+    apply: (d) => { d.power += rRange(3,8); d.tech += rRange(3,8); d.spirit += rRange(3,8); d.motivation = Math.min(100, d.motivation+10); },
+  },
+  {
+    id: 'weight_management', prob: 0.04, icon: '⚖',
+    title: '体重最適化',
+    text: (d) => `${d.name}が適正体重を意識した食事管理を始めた！`,
+    apply: (d) => { const opt = d.optimalWeight; const diff = d.weight - opt; if(Math.abs(diff)>5) { d.weight += diff>0 ? -rRange(2,5) : rRange(2,4); } },
+  },
 ];
 
 // ═══════════════════════════════════════════════════
@@ -294,6 +373,8 @@ export const SANSHO = [
   { id: 'kanto',   name: '敢闘賞', cond: (wins, pos) => wins >= 11 },
   { id: 'gino',    name: '技能賞', cond: (wins, pos) => wins >= 10 && wins <= 12 },
 ];
+
+export const TRAINING_TURNS_PER_BASHO = 10;
 
 // ═══════════════════════════════════════════════════
 //  ユーティリティ

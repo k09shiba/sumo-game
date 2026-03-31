@@ -26,6 +26,8 @@ function defaultState() {
     history:      [],         // HistoryEntry[]
     activeItems:  {},         // {itemId: remainingBasho}
     pendingItems: [],         // 次場所から有効なアイテム
+    sponsors:       [],        // スポンサー一覧
+    trainTurnsLeft: 10,        // 稽古残り回数
     tutorialDone: false,
     phase:        'title',    // 'title'|'create'|'main'|'basho'|'results'
     currentBashoResults: null,// 直近場所の結果
@@ -125,6 +127,7 @@ function newDiscipleDefaults() {
     talent:          80,
     optimalWeight:   120,
     styleXP:         { oshi: 0, yotsu: 0, tech: 0, heavy: 0 },
+    personality:     'earnest', // 性格特性
   };
 }
 

@@ -623,3 +623,113 @@ html, body {
   to   { opacity: 1; transform: translateY(0); }
 }
 .result-card { animation: slideIn 0.25s ease-out both; }
+
+/* ── 性格特性 ── */
+.char-pers {
+  font-size: 12px;
+  color: #f0c040;
+  margin-top: 2px;
+  font-weight: bold;
+}
+
+/* ── 稽古残り回数 ── */
+.train-turns-info {
+  text-align: center;
+  padding: 4px 0;
+  font-size: 13px;
+  color: #ccc;
+  margin-bottom: 4px;
+}
+.turns-count {
+  font-size: 16px;
+  font-weight: bold;
+}
+.turns-label {
+  color: #999;
+  font-size: 12px;
+}
+
+/* ── 番付表 ── */
+.banzuke-section {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  margin-bottom: 6px;
+  padding: 6px 10px;
+}
+.banzuke-empty-section {
+  opacity: 0.5;
+  padding: 4px 10px;
+}
+.banzuke-div-name {
+  font-weight: bold;
+  color: #d4a800;
+  font-size: 14px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(212,168,0,0.3);
+  padding-bottom: 2px;
+}
+.banzuke-no-member {
+  color: #666;
+  font-size: 12px;
+}
+.banzuke-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 13px;
+}
+.banzuke-pos {
+  color: #aaa;
+  min-width: 80px;
+  font-size: 12px;
+}
+.banzuke-name {
+  font-weight: bold;
+  flex: 1;
+}
+.banzuke-record {
+  color: #aaa;
+  font-size: 11px;
+}
+.banzuke-player {
+  color: #ffe066;
+}
+.banzuke-focus {
+  color: #ffd700;
+  background: rgba(255,215,0,0.08);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+.banzuke-rival {
+  color: #ff7070;
+}
+.banzuke-rival-badge {
+  font-size: 10px;
+  color: #ff7070;
+  border: 1px solid #ff7070;
+  border-radius: 3px;
+  padding: 0 3px;
+}
+
+/* ── スポンサー表示 ── */
+.sponsor-list {
+  background: rgba(255,215,0,0.05);
+  border: 1px solid rgba(255,215,0,0.2);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+}
+.sponsor-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+  font-size: 13px;
+}
+.sponsor-income {
+  color: #ffe066;
+  font-weight: bold;
+  font-size: 12px;
+}

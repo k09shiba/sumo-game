@@ -1,9 +1,29 @@
 import {
-  TRAINING_CMDS, CONDITIONS,
+  TRAINING_CMDS, CONDITIONS, TRAINING_TURNS_PER_BASHO,
   rRange, clamp,
 } from './constants.js';
 import { calcOptimalWeight, weightStatus } from './disciple.js';
 import { GS } from './state.js';
+
+// ─── 性格による成長倍率 ──────────────────────────
+function personalityGain(d, gainType, baseGain) {
+  const p = d.personality;
+  if (!p || p === 'earnest') return Math.round(baseGain * (p === 'earnest' ? 1.25 : 1.0));
+  if (p === 'genius') {
+    const roll = Math.random();
+    if (roll < 0.18) return Math.max(1, Math.round(baseGain * 0.3));   // スランプ
+    if (roll > 0.82) return Math.round(baseGain * 2.2);                  // 大爆発
+    return baseGain;
+  }
+  if (p === 'spiritual') {
+    return gainType === 'spirit' || gainType === 'motivation'
+      ? Math.round(baseGain * 1.5) : baseGain;
+  }
+  if (p === 'technical') {
+    return gainType === 'tech' ? Math.round(baseGain * 1.5) : baseGain;
+  }
+  return baseGain;
+}
 
 // ─── 稽古実行 ────────────────────────────────────
 export function applyTraining(d, cmdId) {
@@ -13,6 +33,13 @@ export function applyTraining(d, cmdId) {
   // スタミナチェック
   if (d.stamina < cmd.stamCost) {
     return { ok: false, msg: `スタミナが足りない！（必要:${cmd.stamCost}）` };
+  }
+
+  // 稽古回数チェック
+  if (cmd.stamCost > 0) {
+    if ((GS.trainTurnsLeft ?? TRAINING_TURNS_PER_BASHO) <= 0) {
+      return { ok: false, msg: '今月の稽古は十分です！休養してください。' };
+    }
   }
 
   d.stamina = clamp(d.stamina - cmd.stamCost, 0, d.maxStamina);
@@ -30,7 +57,7 @@ export function applyTraining(d, cmdId) {
 
   switch (cmdId) {
     case 'oshi': {
-      const gain = Math.round(rRange(8, 16) * dojoBonus * talentFactor);
+      const gain = personalityGain(d, 'power', Math.round(rRange(8, 16) * dojoBonus * talentFactor));
       d.power = clamp(d.power + gain, 0, statCap);
       d.styleXP.oshi = (d.styleXP.oshi || 0) + 10;
       if (d.styleXP.oshi > 80 && d.sumoStyle !== 'oshi') {
@@ -41,7 +68,7 @@ export function applyTraining(d, cmdId) {
       break;
     }
     case 'yotsu': {
-      const gain = Math.round(rRange(8, 16) * dojoBonus * talentFactor);
+      const gain = personalityGain(d, 'tech', Math.round(rRange(8, 16) * dojoBonus * talentFactor));
       d.tech = clamp(d.tech + gain, 0, statCap);
       d.styleXP.yotsu = (d.styleXP.yotsu || 0) + 10;
       if (d.styleXP.yotsu > 80 && d.sumoStyle !== 'yotsu') {
@@ -52,7 +79,7 @@ export function applyTraining(d, cmdId) {
       break;
     }
     case 'nage': {
-      const gain = Math.round(rRange(5, 11) * dojoBonus * talentFactor);
+      const gain = personalityGain(d, 'tech', Math.round(rRange(5, 11) * dojoBonus * talentFactor));
       d.tech = clamp(d.tech + gain, 0, statCap);
       d.styleXP.tech = (d.styleXP.tech || 0) + 8;
       const wLoss = rRange(1, 2);
@@ -68,8 +95,8 @@ export function applyTraining(d, cmdId) {
       break;
     }
     case 'mental': {
-      const sGain = Math.round(rRange(8, 16) * dojoBonus * talentFactor);
-      const mGain = rRange(5, 12);
+      const sGain = personalityGain(d, 'spirit', Math.round(rRange(8, 16) * dojoBonus * talentFactor));
+      const mGain = personalityGain(d, 'motivation', rRange(5, 12));
       d.spirit     = clamp(d.spirit + sGain, 0, statCap);
       d.motivation = clamp(d.motivation + mGain, 0, 100);
       msgs.push(`精神 +${sGain}、やる気 +${mGain}`);
@@ -93,7 +120,7 @@ export function applyTraining(d, cmdId) {
     }
     case 'group': {
       const lv = GS.facilities.dojo + 1;
-      const gain = Math.round(rRange(3, 6) * lv * talentFactor);
+      const gain = personalityGain(d, 'power', Math.round(rRange(3, 6) * lv * talentFactor));
       d.power  = clamp(d.power  + gain, 0, statCap);
       d.tech   = clamp(d.tech   + gain, 0, statCap);
       d.spirit = clamp(d.spirit + gain, 0, statCap);
@@ -141,6 +168,19 @@ export function applyTraining(d, cmdId) {
     }
   }
 
+  // 稽古回数を消費（スタミナコストあるコマンドのみ）
+  if (cmd.stamCost > 0) {
+    GS.trainTurnsLeft = Math.max(0, (GS.trainTurnsLeft ?? TRAINING_TURNS_PER_BASHO) - 1);
+  }
+
+  // 天才肌の大爆発メッセージ
+  if (d.personality === 'genius' && msgs.length > 0) {
+    const lastGain = parseInt(msgs[0].match(/\d+/)?.[0] || '0');
+    const baseExpected = 12;
+    if (lastGain > baseExpected * 1.8) msgs.unshift('✨ 天才的なひらめき！大爆発！');
+    else if (lastGain < baseExpected * 0.5 && lastGain > 0) msgs.unshift('😓 今日はイマイチ…');
+  }
+
   // やる気による稽古後の元気低下
   if (cmd.stamCost > 0 && d.motivation < 30) {
     msgs.push('やる気が低い…稽古の効果が薄い。');
@@ -176,6 +216,7 @@ export function healInjury(d) {
 
 // ─── 場所後のスタミナ消費回復 ────────────────────
 export function postBashoRecovery(d) {
+  GS.trainTurnsLeft = TRAINING_TURNS_PER_BASHO;
   const base   = d.divIdx >= 4 ? 40 : 25;  // 関取のほうが体への負担大
   const medAdd = GS.facilities.medical * 8;
   const gain   = base + medAdd;

@@ -4,7 +4,7 @@ import {
 } from '../game/constants.js';
 import { calcBashoIncome, getCurrentBashoInfo, simulateRivalBasho, advanceMonth } from '../game/basho.js';
 import { applyRankChange, drainEventQueue, checkRetirementAge } from '../game/rankSystem.js';
-import { rollRandomEvents, checkAnnualAwards, applyFacilityEffects, updateMotivation } from '../game/events.js';
+import { rollRandomEvents, checkAnnualAwards, applyFacilityEffects, updateMotivation, rollSponsorEvent, acceptSponsor } from '../game/events.js';
 import { retireDisciple } from '../game/facility.js';
 import { queueModal, processModalQueue, toast } from '../render/modal.js';
 import { showScreen } from './index.js';
@@ -71,6 +71,62 @@ export function renderResults() {
 
   // イベントキューを処理（昇進モーダルなど）
   processModalQueue();
+
+  // スポンサーイベント
+  const sponsorOffer = rollSponsorEvent();
+  if (sponsorOffer) {
+    setTimeout(() => {
+      queueModal({
+        em: sponsorOffer.icon,
+        title: `${sponsorOffer.name}からスポンサーオファー！`,
+        text: `${sponsorOffer.desc}\n毎場所 +${sponsorOffer.income}両 の後援が受けられます。\n契約しますか？`,
+        choices: [
+          {
+            label: '✅ 契約する',
+            fn: () => {
+              acceptSponsor(sponsorOffer.id);
+              saveGame();
+              toast(`${sponsorOffer.name}と契約しました！毎場所+${sponsorOffer.income}両！`);
+            },
+          },
+          { label: '断る', fn: () => {} },
+        ],
+      });
+      processModalQueue();
+    }, 500);
+  }
+
+  // スポンサー収入表示
+  if (GS.sponsors && GS.sponsors.length > 0) {
+    const sponsorIncome = GS.sponsors.reduce((sum, s) => sum + s.income, 0);
+    const sponsorEl = document.getElementById('income-section');
+    if (sponsorEl) {
+      sponsorEl.innerHTML += `
+        <div class="income-row">
+          <span>スポンサー収入（${GS.sponsors.length}社）</span>
+          <strong>+${sponsorIncome}両</strong>
+        </div>`;
+    }
+  }
+
+  // 横綱初優勝チェック
+  for (const d of GS.disciples) {
+    if (!d.retired && d.divIdx >= 7) { // yokozuna
+      const firstYusho = d.yushoRecord?.find(y => y.divName === '横綱');
+      if (firstYusho && firstYusho.bashoIdx === GS.bashoCount - 1 && !d._yokozunaYushoShown) {
+        d._yokozunaYushoShown = true;
+        setTimeout(() => {
+          queueModal({
+            em: '👑',
+            title: `${d.name} 横綱初優勝！！！`,
+            text: `${d.name}が横綱として初めての優勝を果たした！\n土俵の神として、その名は永遠に語り継がれるだろう。\n\n通算成績：${d.totalWins}勝${d.totalLosses}敗\n優勝回数：${d.yushoRecord.length}回`,
+          });
+          processModalQueue();
+        }, 1000);
+        break;
+      }
+    }
+  }
 
   document.getElementById('btn-back-to-main')?.addEventListener('click', () => {
     GS.phase = 'main';

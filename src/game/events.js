@@ -1,4 +1,4 @@
-import { RANDOM_EVENTS, rRange, clamp } from './constants.js';
+import { RANDOM_EVENTS, SPONSORS, rRange, clamp } from './constants.js';
 import { GS } from './state.js';
 
 // ─── 場所間ランダムイベント（弟子ごと） ──────────
@@ -78,4 +78,41 @@ export function checkAnnualAwards() {
     wins:  bestWins,
     bonus: 50,
   };
+}
+
+// ─── スポンサーイベント ───────────────────────────
+export function rollSponsorEvent() {
+  if (!GS.sponsors) GS.sponsors = [];
+  if (GS.sponsors.length >= 3) return null; // 最大3社まで
+
+  // 最高ランクの弟子を取得
+  const topDisciple = GS.disciples
+    .filter(d => !d.retired)
+    .sort((a, b) => b.divIdx - a.divIdx)[0];
+  if (!topDisciple) return null;
+
+  // 低確率でスポンサーオファー
+  if (Math.random() > 0.22) return null;
+
+  // 現在のスポンサーIDセット
+  const currentIds = new Set(GS.sponsors.map(s => s.id));
+
+  // 資格あるスポンサーを絞り込み
+  const eligible = SPONSORS.filter(s =>
+    !currentIds.has(s.id) &&
+    topDisciple.divIdx >= s.minDiv
+  );
+  if (eligible.length === 0) return null;
+
+  return eligible[rRange(0, eligible.length - 1)];
+}
+
+// スポンサー契約を結ぶ
+export function acceptSponsor(sponsorId) {
+  const sponsor = SPONSORS.find(s => s.id === sponsorId);
+  if (!sponsor) return;
+  if (!GS.sponsors) GS.sponsors = [];
+  if (!GS.sponsors.find(s => s.id === sponsorId)) {
+    GS.sponsors.push({ ...sponsor });
+  }
 }

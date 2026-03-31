@@ -1,5 +1,5 @@
 import { GS, saveGame, addHistory } from '../game/state.js';
-import { BODY_TYPES, SUMO_STYLES } from '../game/constants.js';
+import { BODY_TYPES, SUMO_STYLES, PERSONALITIES } from '../game/constants.js';
 import { createDisciple, createRival, randomName } from '../game/disciple.js';
 import { getMaxDisciples } from '../game/facility.js';
 import { renderCharacter, initCharRenderer } from '../render/charRenderer.js';
@@ -53,6 +53,18 @@ export function renderCreate() {
         </div>
       </div>
 
+      <div class="input-row">
+        <label>性格</label>
+        <div class="radio-group" id="sel-personality">
+          ${PERSONALITIES.map(p => `
+            <label class="radio-card">
+              <input type="radio" name="personality" value="${p.id}" ${p.id === 'earnest' ? 'checked' : ''}>
+              <span class="rc-name">${p.icon} ${p.name}</span>
+              <span class="rc-desc">${p.desc}</span>
+            </label>`).join('')}
+        </div>
+      </div>
+
       <!-- プレビュー -->
       <div class="preview-section">
         <div id="preview-char" style="width:200px;height:300px;margin:0 auto;"></div>
@@ -76,7 +88,7 @@ export function renderCreate() {
   document.getElementById('btn-back-create').onclick = () => showScreen('title');
 
   // ラジオ変更時にプレビュー更新
-  document.querySelectorAll('input[name="bodytype"], input[name="style"]').forEach(el => {
+  document.querySelectorAll('input[name="bodytype"], input[name="style"], input[name="personality"]').forEach(el => {
     el.addEventListener('change', updatePreview);
   });
 
@@ -87,11 +99,12 @@ export function renderCreate() {
 
 // ─── プレビュー更新 ──────────────────────────────
 function updatePreview() {
-  const name     = document.getElementById('inp-name')?.value || randomName();
-  const bodyType = document.querySelector('input[name="bodytype"]:checked')?.value || 'anko';
-  const style    = document.querySelector('input[name="style"]:checked')?.value    || 'oshi';
+  const name        = document.getElementById('inp-name')?.value || randomName();
+  const bodyType    = document.querySelector('input[name="bodytype"]:checked')?.value || 'anko';
+  const style       = document.querySelector('input[name="style"]:checked')?.value    || 'oshi';
+  const personality = document.querySelector('input[name="personality"]:checked')?.value || 'earnest';
 
-  previewD = createDisciple({ name, bodyType, sumoStyle: style, quality: 2 });
+  previewD = createDisciple({ name, bodyType, sumoStyle: style, personality, quality: 2 });
   renderCharacter(previewD);
 
   const statsEl = document.getElementById('preview-stats');
@@ -107,10 +120,11 @@ function updatePreview() {
 
 // ─── 弟子を作成する ──────────────────────────────
 function doCreate() {
-  const name     = document.getElementById('inp-name')?.value.trim();
-  const bodyType = document.querySelector('input[name="bodytype"]:checked')?.value || 'anko';
-  const style    = document.querySelector('input[name="style"]:checked')?.value    || 'oshi';
-  const stable   = document.getElementById('inp-stable')?.value.trim();
+  const name        = document.getElementById('inp-name')?.value.trim();
+  const bodyType    = document.querySelector('input[name="bodytype"]:checked')?.value || 'anko';
+  const style       = document.querySelector('input[name="style"]:checked')?.value    || 'oshi';
+  const personality = document.querySelector('input[name="personality"]:checked')?.value || 'earnest';
+  const stable      = document.getElementById('inp-stable')?.value.trim();
 
   if (!name) { toast('しこ名を入力してください！'); return; }
 
@@ -123,7 +137,7 @@ function doCreate() {
     GS.stableName = stable;
   }
 
-  const d = createDisciple({ name, bodyType, sumoStyle: style });
+  const d = createDisciple({ name, bodyType, sumoStyle: style, personality });
   GS.disciples.push(d);
 
   // ライバル生成（初回のみ）

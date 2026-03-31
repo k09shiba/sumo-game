@@ -16,6 +16,7 @@ export function getCurrentBashoInfo() {
 
 // ─── 場所開始処理 ────────────────────────────────
 export function startBasho() {
+  GS.trainTurnsLeft = 10; // Training turns reset each basho
   for (const d of GS.disciples) {
     if (d.retired) continue;
     d.wins   = 0;
@@ -100,7 +101,14 @@ function generateOpponent(d, day) {
 
 // ─── 勝率計算 ────────────────────────────────────
 function calcWinProb(d, opponent) {
-  const myStr = baseStrength(d);
+  let myStr;
+  if (d.personality === 'spiritual') {
+    myStr = d.power * 0.33 + d.tech * 0.30 + d.spirit * 0.37;
+  } else if (d.personality === 'technical') {
+    myStr = d.power * 0.33 + d.tech * 0.45 + d.spirit * 0.22;
+  } else {
+    myStr = baseStrength(d);
+  }
   const opStr = opponent.power * 0.40 + opponent.tech * 0.35 + opponent.spirit * 0.25;
   let prob    = myStr / (myStr + opStr);
 
@@ -166,6 +174,10 @@ export function calcBashoIncome() {
     if (lastYusho?.bashoIdx === GS.bashoCount - 1) income += 50;
   }
   income += (GS.incomeBonus || 0);
+  // スポンサー収入
+  for (const s of (GS.sponsors || [])) {
+    income += s.income;
+  }
   return income;
 }
 

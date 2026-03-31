@@ -1,5 +1,5 @@
 import {
-  BODY_TYPES, SUMO_STYLES, NAME_PREFIX, NAME_SUFFIX,
+  BODY_TYPES, SUMO_STYLES, PERSONALITIES, NAME_PREFIX, NAME_SUFFIX,
   DIVISIONS, DIV_JONOKUCHI,
   rRange, clamp,
 } from './constants.js';
@@ -12,6 +12,7 @@ function newId() { return `d_${Date.now()}_${++_idCounter}`; }
 export function createDisciple(options = {}) {
   const bodyType  = options.bodyType  || BODY_TYPES[rRange(0, BODY_TYPES.length - 1)].id;
   const sumoStyle = options.sumoStyle || SUMO_STYLES[rRange(0, SUMO_STYLES.length - 1)].id;
+  const personality = options.personality || PERSONALITIES[rRange(0, PERSONALITIES.length - 1)].id;
 
   const talent  = options.talent  ?? rRange(50, 100);  // 秘めた才能（成長上限に影響）
   const baseAge = options.age     ?? rRange(15, 22);
@@ -24,6 +25,11 @@ export function createDisciple(options = {}) {
   const tech   = clamp(statBase + rRange(-20, 20), 40, 200);
   const spirit = clamp(statBase + rRange(-15, 15), 40, 200);
 
+  // 性格による初期補正
+  let initPower = power, initTech = tech, initSpirit = spirit;
+  if (personality === 'technical') initTech = clamp(tech + rRange(10, 20), 40, 200);
+  if (personality === 'spiritual') initSpirit = clamp(spirit + rRange(10, 20), 40, 200);
+
   const optimalWeight = calcOptimalWeight(bodyType, power);
   const maxStamina = 80 + quality * 10 + rRange(0, 10);
 
@@ -35,9 +41,10 @@ export function createDisciple(options = {}) {
     weight,
     bodyType,
     sumoStyle,
-    power,
-    tech,
-    spirit,
+    personality,
+    power: initPower,
+    tech: initTech,
+    spirit: initSpirit,
     maxStamina,
     stamina:      maxStamina,
     motivation:   rRange(65, 90),
@@ -72,20 +79,22 @@ export function createDisciple(options = {}) {
 // ─── 適正体重の計算 ──────────────────────────────
 export function calcOptimalWeight(bodyType, power) {
   const base = {
-    anko:   130 + power * 0.25,
-    shohei: 80  + power * 0.18,
-    muscle: 110 + power * 0.35,
+    anko:    130 + power * 0.25,
+    shohei:  80  + power * 0.18,
+    muscle:  110 + power * 0.35,
+    kicchin: 70  + power * 0.12,
   }[bodyType] ?? 120;
-  const limits = { anko: 220, shohei: 150, muscle: 200 };
+  const limits = { anko: 220, shohei: 150, muscle: 200, kicchin: 120 };
   return Math.min(base, limits[bodyType] ?? 200);
 }
 
 // ─── 初期体重 ────────────────────────────────────
 function calcInitWeight(bodyType) {
   return {
-    anko:   rRange(110, 150),
-    shohei: rRange(75, 100),
-    muscle: rRange(100, 130),
+    anko:    rRange(110, 150),
+    shohei:  rRange(75,  100),
+    muscle:  rRange(100, 130),
+    kicchin: rRange(65,  90),
   }[bodyType] ?? rRange(90, 120);
 }
 

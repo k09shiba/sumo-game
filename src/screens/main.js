@@ -11,7 +11,7 @@ import { getCurrentBashoInfo } from '../game/basho.js';
 import { queueModal, processModalQueue, toast } from '../render/modal.js';
 import {
   refreshTrainTab, renderDiscipleList, renderFacilityTab,
-  renderHistoryTab, addMsg, updateHeader,
+  renderHistoryTab, renderBanzukeTab, addMsg, updateHeader,
 } from '../render/ui.js';
 import { initCharRenderer } from '../render/charRenderer.js';
 import { showScreen } from './index.js';
@@ -36,6 +36,7 @@ export function renderMain() {
         <button class="tab" data-tab="list">弟子一覧</button>
         <button class="tab" data-tab="facility">施設</button>
         <button class="tab" data-tab="history">歴史</button>
+        <button class="tab" data-tab="banzuke">番付表</button>
       </div>
 
       <!-- 育成タブ -->
@@ -48,6 +49,7 @@ export function renderMain() {
               <div id="tr-name" class="char-name">名前</div>
               <div id="tr-rank" class="char-rank">番付</div>
               <div id="tr-cond" class="char-cond">普通</div>
+              <div id="tr-personality" class="char-pers"></div>
             </div>
           </div>
 
@@ -55,6 +57,7 @@ export function renderMain() {
           <div class="stat-panel">
             <div id="stat-bars"></div>
             <div id="cmd-grid" class="cmd-grid"></div>
+            <div id="train-turns-info" class="train-turns-info"></div>
           </div>
         </div>
 
@@ -86,6 +89,11 @@ export function renderMain() {
       <!-- 歴史タブ -->
       <div id="tab-history" class="tab-content hidden">
         <div id="history-content"></div>
+      </div>
+
+      <!-- 番付表タブ -->
+      <div id="tab-banzuke" class="tab-content hidden">
+        <div id="banzuke-content"></div>
       </div>
     </div>`;
 
@@ -124,6 +132,7 @@ function switchTab(tab) {
     case 'list':     renderDiscipleList(document.getElementById('disciple-list')); break;
     case 'facility': renderFacilityTab(document.getElementById('facility-content')); break;
     case 'history':  renderHistoryTab(document.getElementById('history-content')); break;
+    case 'banzuke':  renderBanzukeTab(document.getElementById('banzuke-content')); break;
   }
 }
 
