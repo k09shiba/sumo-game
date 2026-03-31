@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { KESHO_MAWASHI, CONDITIONS, DIV_JURYO, DIV_YOKOZUNA, clamp } from '../game/constants.js';
+import { KESHO_MAWASHI, CONDITIONS, SKIN_TONES, FACE_TYPES, DIV_JURYO, DIV_YOKOZUNA, clamp } from '../game/constants.js';
 
 // ─── Pixi.js アプリケーション ──────────────────
 let app = null;
@@ -94,6 +94,13 @@ function getBodyDims(d) {
   if (d.bodyType === 'anko')   { belly *= 1.4; bodyW = Math.round(bodyW * 1.15); }
   if (d.bodyType === 'shohei') { bodyW = Math.round(bodyW * 0.85); legW = Math.round(legW * 1.1); }
   if (d.bodyType === 'muscle') { shoulderAdd = Math.round(shoulderAdd * 1.2); belly = 0; armW = Math.round(armW * 1.3); }
+  if (d.bodyType === 'kicchin') {
+    bodyW        = Math.round(bodyW * 0.82);
+    legW         = Math.round(legW * 0.88);
+    belly        = 0;
+    armW         = Math.round(armW * 0.85);
+    shoulderAdd  = Math.round(shoulderAdd * 0.75);
+  }
 
   return {
     bodyW, belly, legW, shoulderAdd, armW,
@@ -103,9 +110,8 @@ function getBodyDims(d) {
 }
 
 function skinColor(d) {
-  // 体重・年齢による微妙な肌色の違い
-  const base = d.weight > 150 ? 0xF0C090 : 0xF5CA9A;
-  return base;
+  const tone = SKIN_TONES.find(s => s.id === (d.skinTone || 'fair'));
+  return tone ? tone.col : 0xF8D8B0;
 }
 
 // ─── 影 ──────────────────────────────────────────
@@ -479,35 +485,51 @@ function drawNeck(cx, neckY, dims, d) {
 // ─── 頭・顔・髷 ──────────────────────────────────
 function drawHead(cx, headTopY, headH, dims, d) {
   const headW    = Math.round(50 + d.weight / 20);
-  const headMidY = headTopY + headH / 2;
   const skin     = dims.skin;
   const cond     = CONDITIONS[d.conditionIdx ?? 2];
   const isKanto  = d.divIdx >= DIV_JURYO;
   const isYoko   = d.divIdx >= DIV_YOKOZUNA;
 
+  // 顔型補正
+  let faceW = headW, faceH = headH;
+  const ft = d.faceType || 'round';
+  if (ft === 'round')  { faceW = Math.round(headW * 1.10); faceH = Math.round(headH * 0.93); }
+  if (ft === 'long')   { faceW = Math.round(headW * 0.88); faceH = Math.round(headH * 1.10); }
+  if (ft === 'square') { faceW = Math.round(headW * 1.06); faceH = Math.round(headH * 0.96); }
+  if (ft === 'baby')   { faceW = Math.round(headW * 1.08); faceH = Math.round(headH * 0.90); }
+  const headMidYf = headTopY + faceH / 2;
+
   const g = new PIXI.Graphics();
 
   // ── 顔の輪郭 ──
   g.beginFill(skin);
-  g.drawEllipse(cx, headMidY, headW/2, headH/2);
+  g.drawEllipse(cx, headMidYf, faceW/2, faceH/2);
   g.endFill();
 
   // 顎の補強（下部に小楕円）
   g.beginFill(darken(skin, 0.04));
-  g.drawEllipse(cx, headTopY + headH * 0.78, headW * 0.32, headH * 0.18);
+  g.drawEllipse(cx, headTopY + faceH * 0.78, faceW * 0.32, faceH * 0.18);
   g.endFill();
+
+  // 四角顔：顎をより方形に
+  if (ft === 'square') {
+    g.beginFill(skin);
+    g.drawRect(cx - faceW * 0.28, headTopY + faceH * 0.72, faceW * 0.56, faceH * 0.22);
+    g.endFill();
+  }
 
   // 耳
   g.beginFill(darken(skin, 0.1));
-  g.drawEllipse(cx - headW/2 + 2, headMidY + 2, 6, 9);
-  g.drawEllipse(cx + headW/2 - 2, headMidY + 2, 6, 9);
+  g.drawEllipse(cx - faceW/2 + 2, headMidYf + 2, 6, 9);
+  g.drawEllipse(cx + faceW/2 - 2, headMidYf + 2, 6, 9);
   g.endFill();
 
   // ── 眉 ──
-  const eyeY   = headTopY + headH * 0.45;
-  const eyeLX  = cx - headW * 0.22;
-  const eyeRX  = cx + headW * 0.22;
-  const eyeW   = headW * 0.15;
+  const eyeY   = headTopY + faceH * 0.45;
+  const eyeLX  = cx - faceW * 0.22;
+  const eyeRX  = cx + faceW * 0.22;
+  let eyeW     = faceW * 0.15;
+  if (ft === 'baby') eyeW = faceW * 0.19;
   const browH  = d.conditionIdx <= 1 ? 2 : 0; // 不調時は眉が下がる
 
   g.lineStyle(2.5, 0x2a1a0a, 0.9);
@@ -548,15 +570,15 @@ function drawHead(cx, headTopY, headH, dims, d) {
   g.endFill();
 
   // ── 鼻 ──
-  const noseY = eyeY + headH * 0.14;
+  const noseY = eyeY + faceH * 0.14;
   g.beginFill(darken(skin, 0.18), 0.5);
   g.drawCircle(cx - 5, noseY, 3);
   g.drawCircle(cx + 5, noseY, 3);
   g.endFill();
 
   // ── 口 ──
-  const mouthY = headTopY + headH * 0.72;
-  const mw2    = headW * 0.25;
+  const mouthY = headTopY + faceH * 0.72;
+  const mw2    = faceW * 0.25;
   g.lineStyle(2, 0x5a2a0a, 0.8);
   if (d.conditionIdx >= 3) {
     // 好調：微笑み
@@ -577,8 +599,16 @@ function drawHead(cx, headTopY, headH, dims, d) {
   const blushAlpha = (d.conditionIdx >= 3) ? 0.35 : (d.conditionIdx <= 1) ? 0 : 0.20;
   if (blushAlpha > 0) {
     g.beginFill(0xFF9999, blushAlpha);
-    g.drawEllipse(cx - headW * 0.3, eyeY + 6, 9, 6);
-    g.drawEllipse(cx + headW * 0.3, eyeY + 6, 9, 6);
+    g.drawEllipse(cx - faceW * 0.3, eyeY + 6, 9, 6);
+    g.drawEllipse(cx + faceW * 0.3, eyeY + 6, 9, 6);
+    g.endFill();
+  }
+
+  // 童顔：大きめの頬の赤み
+  if (ft === 'baby') {
+    g.beginFill(0xFF9999, 0.28);
+    g.drawEllipse(cx - faceW * 0.38, eyeY + 8, 13, 9);
+    g.drawEllipse(cx + faceW * 0.38, eyeY + 8, 13, 9);
     g.endFill();
   }
 
@@ -589,14 +619,14 @@ function drawHead(cx, headTopY, headH, dims, d) {
   if (stamRatio < 0.25) {
     const sg = new PIXI.Graphics();
     sg.beginFill(0x88CCFF, 0.7);
-    sg.drawPolygon([cx + headW/2 - 4, eyeY - 5, cx + headW/2 + 2, eyeY - 5, cx + headW/2, eyeY + 2]);
-    sg.drawPolygon([cx - headW/2 + 4, eyeY + 5, cx - headW/2 - 2, eyeY + 5, cx - headW/2, eyeY + 12]);
+    sg.drawPolygon([cx + faceW/2 - 4, eyeY - 5, cx + faceW/2 + 2, eyeY - 5, cx + faceW/2, eyeY + 2]);
+    sg.drawPolygon([cx - faceW/2 + 4, eyeY + 5, cx - faceW/2 - 2, eyeY + 5, cx - faceW/2, eyeY + 12]);
     sg.endFill();
     charStage.addChild(sg);
   }
 
   // ── 髷 ──
-  drawMage(cx, headTopY, headH, headW, d, isKanto, isYoko);
+  drawMage(cx, headTopY, faceH, faceW, d, isKanto, isYoko);
 }
 
 function drawMage(cx, headTopY, headH, headW, d, isKanto, isYoko) {

@@ -1,5 +1,5 @@
 import { GS, saveGame, addHistory } from '../game/state.js';
-import { BODY_TYPES, SUMO_STYLES, PERSONALITIES } from '../game/constants.js';
+import { BODY_TYPES, SUMO_STYLES, PERSONALITIES, SKIN_TONES, FACE_TYPES } from '../game/constants.js';
 import { createDisciple, createRival, randomName } from '../game/disciple.js';
 import { getMaxDisciples } from '../game/facility.js';
 import { renderCharacter, initCharRenderer } from '../render/charRenderer.js';
@@ -65,6 +65,30 @@ export function renderCreate() {
         </div>
       </div>
 
+      <div class="input-row">
+        <label>肌の色</label>
+        <div class="skin-tone-group" id="sel-skintone">
+          ${SKIN_TONES.map(st => `
+            <label class="skin-radio">
+              <input type="radio" name="skintone" value="${st.id}" ${st.id === 'fair' ? 'checked' : ''}>
+              <span class="skin-swatch" style="background:${st.css}"></span>
+              <span class="skin-name">${st.name}</span>
+            </label>`).join('')}
+        </div>
+      </div>
+
+      <div class="input-row">
+        <label>顔の形</label>
+        <div class="radio-group" id="sel-facetype">
+          ${FACE_TYPES.map(ft => `
+            <label class="radio-card">
+              <input type="radio" name="facetype" value="${ft.id}" ${ft.id === 'round' ? 'checked' : ''}>
+              <span class="rc-name">${ft.name}</span>
+              <span class="rc-desc">${ft.desc}</span>
+            </label>`).join('')}
+        </div>
+      </div>
+
       <!-- プレビュー -->
       <div class="preview-section">
         <div id="preview-char" style="width:200px;height:300px;margin:0 auto;"></div>
@@ -88,7 +112,7 @@ export function renderCreate() {
   document.getElementById('btn-back-create').onclick = () => showScreen('title');
 
   // ラジオ変更時にプレビュー更新
-  document.querySelectorAll('input[name="bodytype"], input[name="style"], input[name="personality"]').forEach(el => {
+  document.querySelectorAll('input[name="bodytype"], input[name="style"], input[name="personality"], input[name="skintone"], input[name="facetype"]').forEach(el => {
     el.addEventListener('change', updatePreview);
   });
 
@@ -103,8 +127,10 @@ function updatePreview() {
   const bodyType    = document.querySelector('input[name="bodytype"]:checked')?.value || 'anko';
   const style       = document.querySelector('input[name="style"]:checked')?.value    || 'oshi';
   const personality = document.querySelector('input[name="personality"]:checked')?.value || 'earnest';
+  const skinTone    = document.querySelector('input[name="skintone"]:checked')?.value  || 'fair';
+  const faceType    = document.querySelector('input[name="facetype"]:checked')?.value  || 'round';
 
-  previewD = createDisciple({ name, bodyType, sumoStyle: style, personality, quality: 2 });
+  previewD = createDisciple({ name, bodyType, sumoStyle: style, personality, skinTone, faceType, quality: 2 });
   renderCharacter(previewD);
 
   const statsEl = document.getElementById('preview-stats');
@@ -124,6 +150,8 @@ function doCreate() {
   const bodyType    = document.querySelector('input[name="bodytype"]:checked')?.value || 'anko';
   const style       = document.querySelector('input[name="style"]:checked')?.value    || 'oshi';
   const personality = document.querySelector('input[name="personality"]:checked')?.value || 'earnest';
+  const skinTone    = document.querySelector('input[name="skintone"]:checked')?.value  || 'fair';
+  const faceType    = document.querySelector('input[name="facetype"]:checked')?.value  || 'round';
   const stable      = document.getElementById('inp-stable')?.value.trim();
 
   if (!name) { toast('しこ名を入力してください！'); return; }
@@ -137,7 +165,7 @@ function doCreate() {
     GS.stableName = stable;
   }
 
-  const d = createDisciple({ name, bodyType, sumoStyle: style, personality });
+  const d = createDisciple({ name, bodyType, sumoStyle: style, personality, skinTone, faceType });
   GS.disciples.push(d);
 
   // ライバル生成（初回のみ）

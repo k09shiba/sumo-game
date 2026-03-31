@@ -2,9 +2,12 @@
 import './style.css';
 import { GS, loadGame, hasSaveData } from './game/state.js';
 import { showScreen } from './screens/index.js';
+import { initSettings } from './render/settings.js';
 
 // ─── アプリ起動 ───────────────────────────────────
 async function init() {
+  initSettings();
+
   // セーブデータのチェック
   const hasSave = hasSaveData();
 

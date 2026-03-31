@@ -128,6 +128,8 @@ function newDiscipleDefaults() {
     optimalWeight:   120,
     styleXP:         { oshi: 0, yotsu: 0, tech: 0, heavy: 0 },
     personality:     'earnest', // 性格特性
+    skinTone:        'fair',
+    faceType:        'round',
   };
 }
 

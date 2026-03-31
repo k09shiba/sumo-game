@@ -1,6 +1,7 @@
 import {
   BODY_TYPES, SUMO_STYLES, PERSONALITIES, NAME_PREFIX, NAME_SUFFIX,
   DIVISIONS, DIV_JONOKUCHI,
+  SKIN_TONES, FACE_TYPES,
   rRange, clamp,
 } from './constants.js';
 import { GS } from './state.js';
@@ -13,6 +14,9 @@ export function createDisciple(options = {}) {
   const bodyType  = options.bodyType  || BODY_TYPES[rRange(0, BODY_TYPES.length - 1)].id;
   const sumoStyle = options.sumoStyle || SUMO_STYLES[rRange(0, SUMO_STYLES.length - 1)].id;
   const personality = options.personality || PERSONALITIES[rRange(0, PERSONALITIES.length - 1)].id;
+
+  const skinTone = options.skinTone || SKIN_TONES[rRange(0, SKIN_TONES.length - 1)].id;
+  const faceType = options.faceType || FACE_TYPES[rRange(0, FACE_TYPES.length - 1)].id;
 
   const talent  = options.talent  ?? rRange(50, 100);  // 秘めた才能（成長上限に影響）
   const baseAge = options.age     ?? rRange(15, 22);
@@ -69,6 +73,8 @@ export function createDisciple(options = {}) {
     ozekiFallback:      0,
     yokozunaWarning:    0,
     talent,
+    skinTone,
+    faceType,
     optimalWeight,
     styleXP: { oshi: 0, yotsu: 0, tech: 0, heavy: 0 },
   };

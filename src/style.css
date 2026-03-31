@@ -733,3 +733,169 @@ html, body {
   font-weight: bold;
   font-size: 12px;
 }
+
+/* ── CSS変数 ── */
+:root {
+  --base-font-size: 15px;
+}
+body {
+  font-size: var(--base-font-size);
+}
+
+/* ── 設定オーバーレイ ── */
+#settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#settings-overlay.hidden { display: none; }
+
+#settings-panel {
+  background: #1a1208;
+  border: 2px solid #d4a800;
+  border-radius: 10px;
+  width: min(420px, 94vw);
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 0;
+}
+
+#settings-content {
+  padding: 0 6px 16px;
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(212,168,0,0.4);
+  position: sticky;
+  top: 0;
+  background: #1a1208;
+}
+.settings-title {
+  font-size: 16px;
+  color: #d4a800;
+  font-weight: bold;
+}
+.settings-close {
+  background: none;
+  border: 1px solid #666;
+  color: #ccc;
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.settings-close:hover { border-color: #d4a800; color: #d4a800; }
+
+.settings-section {
+  margin: 10px 12px 0;
+  padding: 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+}
+.settings-label {
+  font-size: 11px;
+  color: #d4a800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+.settings-btn {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 6px;
+  border-radius: 6px;
+  border: 1px solid #555;
+  background: #2a2010;
+  color: #ddd;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  text-align: left;
+}
+.settings-btn:last-child { margin-bottom: 0; }
+.settings-btn:hover { border-color: #d4a800; background: #3a3015; }
+.settings-btn.btn-warn { border-color: #c0a040; color: #f0d060; }
+.settings-btn.btn-danger { border-color: #c04040; color: #ff8080; }
+.settings-btn.btn-danger:hover { background: #3a1010; }
+
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #ccc;
+}
+.font-size-btns {
+  display: flex;
+  gap: 4px;
+}
+.fs-btn {
+  padding: 4px 10px;
+  border: 1px solid #555;
+  background: #2a2010;
+  color: #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.fs-btn.active { border-color: #d4a800; background: #3a3015; color: #f0d060; }
+.fs-btn:hover  { border-color: #d4a800; }
+
+.settings-info {
+  font-size: 12px;
+  color: #aaa;
+  line-height: 1.7;
+}
+.rules-text {
+  max-height: 160px;
+  overflow-y: auto;
+  line-height: 1.6;
+}
+
+/* ── キャラ作成：肌色選択 ── */
+.skin-tone-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.skin-radio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+}
+.skin-radio input { display: none; }
+.skin-swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  transition: border-color 0.15s;
+}
+.skin-radio input:checked + .skin-swatch {
+  border-color: #d4a800;
+  box-shadow: 0 0 6px rgba(212,168,0,0.6);
+}
+.skin-name {
+  font-size: 10px;
+  color: #aaa;
+}
+
+/* ── 設定ボタン（ヘッダー） ── */
+.btn-settings {
+  background: #2a2010;
+  border-color: #555;
+  font-size: 14px;
+}
+.btn-settings:hover { border-color: #d4a800; }

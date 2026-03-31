@@ -1,4 +1,5 @@
 import { GS, saveGame } from '../game/state.js';
+import { openSettings } from '../render/settings.js';
 import { DIVISIONS, TRAINING_CMDS, KESHO_MAWASHI, FACILITY_DATA } from '../game/constants.js';
 import { applyTraining } from '../game/training.js';
 import {
@@ -28,6 +29,7 @@ export function renderMain() {
         <span id="stable-name">${GS.stableName}</span>
         <span id="hd-info"></span>
         <button class="btn-sm btn-save" onclick="doSave()" title="セーブ">💾</button>
+        <button class="btn-sm btn-settings" onclick="openSettings()" title="設定">⚙</button>
       </div>
 
       <!-- タブ -->
@@ -296,6 +298,7 @@ function goToBasho() {
 
 // ─── グローバル関数の公開 ────────────────────────
 function exposeGlobals() {
+  window.openSettings          = openSettings;
   window.handleTraining        = window.handleTraining;
   window.setFocusDisciple      = window.setFocusDisciple;
   window.setFocusAndTab        = window.setFocusAndTab;
