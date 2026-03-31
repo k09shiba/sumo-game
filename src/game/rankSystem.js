@@ -77,27 +77,27 @@ function calcDelta(d, wins) {
   const idx    = d.divIdx;
 
   if (idx === DIV_JONOKUCHI) {
-    // 序ノ口：大きく動く（最大30枚程度）
-    return diff === 0 ? 0 : -diff * 10 + rRange(-2, 2);
+    // 序ノ口：動きを抑えめに
+    return diff === 0 ? 0 : -diff * 7 + rRange(-2, 2);
   }
   if (idx === 1) { // 序二段
     if (wins === 7) return -(div.maxPos + 10); // 全勝→一発昇進
-    return -diff * 14 + rRange(-4, 4);
+    return -diff * 10 + rRange(-3, 3);
   }
   if (idx === 2) { // 三段目
     if (wins === 7) return -(div.maxPos + 10);
-    return -diff * 12 + rRange(-4, 4);
+    return -diff * 9 + rRange(-3, 3);
   }
   if (idx === DIV_MAKUSHITA) { // 幕下
     if (wins === 7 && d.pos <= 5) return -(div.maxPos + 15); // 幕下上位全勝→特例十両
-    if (wins === 7) return -30 + rRange(-5, 0);
+    if (wins === 7) return -25 + rRange(-5, 0);
     const posRatio = d.pos / div.maxPos;
-    const base = posRatio > 0.5 ? 12 : 5;
+    const base = posRatio > 0.5 ? 9 : 4;
     return -diff * base + rRange(-3, 3);
   }
-  // 十両・幕内
+  // 十両・幕内：昇降をやや緩やかに
   const posRatio = d.pos / div.maxPos;
-  return -Math.round(diff * (2.0 + posRatio * 1.2)) + rRange(-1, 2);
+  return -Math.round(diff * (1.5 + posRatio * 0.8)) + rRange(-1, 2);
 }
 
 // ─── 大関の特殊処理 ──────────────────────────────

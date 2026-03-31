@@ -1,6 +1,7 @@
 import {
   DIVISIONS, DIV_JURYO, DIV_MAKUNOUCHI, DIV_YOKOZUNA,
   STYLE_MATCHUP, CONDITIONS, WAZA, DRAMA_EVENTS, BASHO_NAMES,
+  INJURY_PARTS,
   rRange, clamp,
 } from './constants.js';
 import { GS } from './state.js';
@@ -60,10 +61,15 @@ export function simulateAllMatches(d) {
     // 場中怪我判定
     if (!won && d.injuryLevel < 2 && Math.random() < 0.04 + d.injuryLevel * 0.02) {
       d.injuryLevel++;
-      drama.push({ type: DRAMA_EVENTS.INJURY, msg: '軽傷を負った！' });
+      const part = INJURY_PARTS[rRange(0, INJURY_PARTS.length - 1)];
+      d.injuryPart = part;
+      drama.push({ type: DRAMA_EVENTS.INJURY, msg: `${part}に${d.injuryLevel >= 2 ? '重傷' : '軽傷'}を負った！` });
     }
 
-    results.push({ day, opponent: { ...opponent }, won, waza, drama, cumWins: wins, cumLosses: losses });
+    // 取組実況テキスト生成
+    const commentary = generateMatchCommentary(d, opponent, won, waza, day, wins, losses, div.matches);
+
+    results.push({ day, opponent: { ...opponent }, won, waza, drama, cumWins: wins, cumLosses: losses, commentary });
 
     // スタミナ消耗
     const drain = div.matches === 15 ? 4 : 6;
@@ -76,6 +82,50 @@ export function simulateAllMatches(d) {
   d.totalLosses  = (d.totalLosses || 0) + losses;
   d.bashoMatchResults = results;
   return results;
+}
+
+// ─── 取組実況テキスト生成 ─────────────────────────
+function generateMatchCommentary(d, opponent, won, waza, day, wins, losses, numDays) {
+  const tactics = [
+    '立ち合いから激しく押し合い、',
+    '慎重な立ち合いから組み手に移り、',
+    '素早い動きで相手を崩し、',
+    '重い圧力をかけながら、',
+    '巧みな足捌きで相手を翻弄し、',
+    '一気に前へ出て、',
+    '相手の攻めをいなして、',
+    '冷静に組み合って、',
+  ];
+  const winSuffixes = [
+    `見事な${waza}で決めた！`,
+    `鮮やかな${waza}！`,
+    `力強い${waza}で勝利！`,
+    `${waza}で相手を下した。`,
+  ];
+  const lossSuffixes = [
+    `最後は${waza}で敗れた…`,
+    `惜しくも${waza}に屈した。`,
+    `${waza}で土俵を割った。`,
+    `懸命に粘ったが${waza}に敗れた。`,
+  ];
+
+  const tactic = tactics[rRange(0, tactics.length - 1)];
+  const suffix = won
+    ? winSuffixes[rRange(0, winSuffixes.length - 1)]
+    : lossSuffixes[rRange(0, lossSuffixes.length - 1)];
+
+  // 特別演出
+  if (day === numDays && wins + losses === numDays) {
+    return `千秋楽！${tactic}${suffix}`;
+  }
+  if (wins >= (numDays === 15 ? 8 : 4) && losses === 0) {
+    return `まだ全勝！${tactic}${suffix}`;
+  }
+  if (day === 7 && numDays === 15) {
+    return `中日の大一番。${tactic}${suffix}`;
+  }
+
+  return tactic + suffix;
 }
 
 // ─── 対戦相手を生成 ──────────────────────────────
@@ -170,6 +220,10 @@ export function calcBashoIncome() {
     const div = DIVISIONS[d.divIdx];
     income += div.salaryBase;
     if (d.wins > d.losses) income += (d.wins - d.losses) * 5;
+    // 幕下以下にも少額の手当（勝ち越しで成長意欲を維持）
+    if (d.divIdx < DIV_JURYO && d.wins > d.losses) {
+      income += 5 + (d.divIdx === DIV_MAKUSHITA ? 5 : 0);
+    }
     const lastYusho = d.yushoRecord?.[d.yushoRecord.length - 1];
     if (lastYusho?.bashoIdx === GS.bashoCount - 1) income += 50;
   }

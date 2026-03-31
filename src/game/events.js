@@ -1,4 +1,4 @@
-import { RANDOM_EVENTS, SPONSORS, rRange, clamp } from './constants.js';
+import { RANDOM_EVENTS, SPONSORS, INJURY_PARTS, rRange, clamp } from './constants.js';
 import { GS } from './state.js';
 
 // ─── 場所間ランダムイベント（弟子ごと） ──────────
@@ -8,6 +8,10 @@ export function rollRandomEvents(d) {
   for (const ev of RANDOM_EVENTS) {
     if (Math.random() < ev.prob) {
       ev.apply(d);
+      // 怪我イベントには部位を付与
+      if ((ev.id === 'injury_light' || ev.id === 'injury_heavy') && d.injuryLevel > 0) {
+        d.injuryPart = INJURY_PARTS[rRange(0, INJURY_PARTS.length - 1)];
+      }
       triggered.push({
         icon:  ev.icon,
         title: ev.title,

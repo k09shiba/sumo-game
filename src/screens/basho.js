@@ -57,7 +57,7 @@ function renderLineup() {
         <div class="lc-name">${d.name}</div>
         <div class="lc-rank">${div.name}${d.pos}枚目（${div.matches}番）</div>
         <div class="lc-cond" style="color:${cond.color}">体調：${cond.label}</div>
-        ${d.injuryLevel >= 1 ? `<div class="lc-inj">🤕 ${d.injuryLevel >= 2 ? '重傷' : '軽傷'}あり</div>` : ''}
+        ${d.injuryLevel >= 1 ? `<div class="lc-inj">🤕 ${d.injuryPart ? d.injuryPart + 'の' : ''}${d.injuryLevel >= 2 ? '重傷' : '軽傷'}あり</div>` : ''}
       </div>`;
   }).join('');
 
@@ -113,10 +113,12 @@ function showBashoSummary() {
       <div class="match-list" id="match-list">
         ${results.map(r => `
           <div class="match-row ${r.won ? 'win' : 'loss'}">
-            <span class="match-day">${r.day}日目</span>
-            <span class="match-result">${r.won ? '○勝' : '●負'}</span>
-            <span class="match-waza">${r.waza}</span>
-            <span class="match-score">${r.cumWins}勝${r.cumLosses}敗</span>
+            <div class="match-row-top">
+              <span class="match-day">${r.day}日目</span>
+              <span class="match-result">${r.won ? '○勝' : '●負'}</span>
+              <span class="match-score">${r.cumWins}勝${r.cumLosses}敗</span>
+            </div>
+            <div class="match-commentary">${r.commentary || r.waza}</div>
           </div>`).join('')}
       </div>
 

@@ -40,8 +40,13 @@ export function refreshTrainTab() {
   const condEl = document.getElementById('tr-cond');
   if (condEl) {
     const cond = CONDITIONS[d.conditionIdx ?? 2];
-    condEl.textContent  = cond.label;
-    condEl.style.color  = cond.color;
+    let condText = cond.label;
+    if (d.injuryLevel >= 1) {
+      const injText = `${d.injuryPart ? d.injuryPart + 'の' : ''}${d.injuryLevel >= 2 ? '重傷' : '軽傷'}`;
+      condText += ` 🤕${injText}`;
+    }
+    condEl.textContent  = condText;
+    condEl.style.color  = d.injuryLevel >= 1 ? '#e74c3c' : cond.color;
   }
 
   // 性格特性
@@ -188,7 +193,7 @@ export function renderDiscipleList(containerEl) {
           <span>${d.weight}kg</span>
         </div>
         <div class="dc-info">
-          ${d.injuryLevel >= 1 ? `<span class="inj-badge">🤕${d.injuryLevel >= 2 ? '重傷' : '軽傷'}</span>` : ''}
+          ${d.injuryLevel >= 1 ? `<span class="inj-badge">🤕${d.injuryPart ? d.injuryPart + 'の' : ''}${d.injuryLevel >= 2 ? '重傷' : '軽傷'}</span>` : ''}
           ${d.divIdx >= 4 ? `<span class="kanto-badge">関取</span>` : ''}
         </div>
         <div class="dc-actions">

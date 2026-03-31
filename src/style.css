@@ -454,14 +454,19 @@ html, body {
   margin-top: 16px;
 }
 
-.match-list { max-height: 280px; overflow-y: auto; margin: 8px 0; }
+.match-list { max-height: 380px; overflow-y: auto; margin: 8px 0; }
 .match-row {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 2px;
   padding: 6px 8px;
   border-bottom: 1px solid #e0d0b0;
   font-size: 12px;
+}
+.match-row-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .match-row.win  { background: #f0fff0; }
 .match-row.loss { background: #fff0f0; }
@@ -469,8 +474,8 @@ html, body {
 .match-result { width: 28px; font-weight: bold; font-size: 13px; }
 .match-row.win  .match-result { color: #1a7a30; }
 .match-row.loss .match-result { color: #c00; }
-.match-waza   { flex: 1; font-size: 11px; color: var(--fg2); }
-.match-score  { font-size: 11px; color: var(--fg2); }
+.match-score  { font-size: 11px; color: var(--fg2); margin-left: auto; }
+.match-commentary { font-size: 11px; color: #6b5a3a; font-style: italic; padding-left: 4px; }
 
 .basho-final {
   text-align: center;

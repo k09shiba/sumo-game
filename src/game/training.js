@@ -138,10 +138,13 @@ export function applyTraining(d, cmdId) {
       break;
     }
     case 'sleep': {
-      d.stamina = d.maxStamina;
+      // 休養はスタミナを65%まで回復（全回復ではなくすることで管理に意味を持たせる）
+      const restoreTarget = Math.round(d.maxStamina * 0.65);
+      const restoreAmt = Math.max(0, restoreTarget - d.stamina);
+      d.stamina = clamp(d.stamina + restoreAmt, 0, d.maxStamina);
       const mGain = rRange(10, 18);
       d.motivation = clamp(d.motivation + mGain, 0, 100);
-      msgs.push(`スタミナ全回復！やる気 +${mGain}`);
+      msgs.push(`スタミナ回復（+${restoreAmt}）、やる気 +${mGain}`);
       break;
     }
     case 'eat': {

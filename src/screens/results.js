@@ -344,6 +344,6 @@ function renderResultCard(r) {
       <div class="rc-rank-change">${rankChange}</div>
       ${r.isYusho ? `<div class="rc-yusho">🏆 ${DIVISIONS[r.oldDivIdx].name}優勝！</div>` : ''}
       ${r.sansho?.length > 0 ? `<div class="rc-sansho">🎖 ${r.sansho.join('・')}</div>` : ''}
-      ${d.injuryLevel >= 1 ? `<div class="rc-inj">🤕 怪我：${d.injuryLevel >= 2 ? '重傷' : '軽傷'}</div>` : ''}
+      ${d.injuryLevel >= 1 ? `<div class="rc-inj">🤕 ${d.injuryPart ? d.injuryPart + 'の' : ''}${d.injuryLevel >= 2 ? '重傷' : '軽傷'}</div>` : ''}
     </div>`;
 }
