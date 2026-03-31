@@ -1,9 +1,10 @@
 import { GS, saveGame, addHistory } from '../game/state.js';
 import {
   DIVISIONS, DIV_JURYO, DIV_MAKUNOUCHI, DIV_YOKOZUNA, KESHO_MAWASHI,
+  DIV_JONOKUCHI,
 } from '../game/constants.js';
 import { calcBashoIncome, getCurrentBashoInfo, simulateRivalBasho, advanceMonth } from '../game/basho.js';
-import { applyRankChange, drainEventQueue, checkRetirementAge } from '../game/rankSystem.js';
+import { applyRankChange, drainEventQueue, checkRetirementAge, checkYusho, checkSansho } from '../game/rankSystem.js';
 import { rollRandomEvents, checkAnnualAwards, applyFacilityEffects, updateMotivation, rollSponsorEvent, acceptSponsor } from '../game/events.js';
 import { retireDisciple } from '../game/facility.js';
 import { queueModal, processModalQueue, toast } from '../render/modal.js';
@@ -17,14 +18,25 @@ export function renderResults() {
   const resultsData = runPostBashoProcessing();
 
   const bashoName = getCurrentBashoInfo().name;
+  const yushoWinners = resultsData.filter(r => r.isYusho);
 
   el.innerHTML = `
+    ${yushoWinners.length > 0 ? '<div class="yusho-celebration" id="yusho-celebration"></div>' : ''}
     <div class="results-wrap">
       <div class="results-header">
         <h2>場所結果発表</h2>
         <div>令和${GS.year}年　${bashoName}</div>
         <button class="btn-sm btn-save" id="res-save-btn">💾</button>
       </div>
+
+      ${yushoWinners.length > 0 ? `
+        <div class="yusho-banner">
+          🏆 ${yushoWinners.map(r => {
+            const divName = DIVISIONS[r.oldDivIdx].name;
+            const totalYusho = r.disciple.yushoRecord?.length || 0;
+            return `${r.disciple.name}　${divName}優勝！（通算${totalYusho}回目）`;
+          }).join('　')} 🏆
+        </div>` : ''}
 
       <div id="results-cards">
         ${resultsData.map(r => renderResultCard(r)).join('')}
@@ -68,6 +80,11 @@ export function renderResults() {
   }
 
   saveGame();
+
+  // 優勝セレブレーションアニメーション
+  if (yushoWinners.length > 0) {
+    triggerYushoCelebration();
+  }
 
   // イベントキューを処理（昇進モーダルなど）
   processModalQueue();
@@ -177,11 +194,38 @@ function runPostBashoProcessing() {
     const events = drainEventQueue();
     processPromotionEvents(events, d);
 
-    // 優勝チェック（d.yushoRecord の最後のエントリが今場所か）
-    const isYusho = d.yushoRecord?.some(y => y.bashoIdx === GS.bashoCount) ?? false;
+    // ── 優勝判定（ここで初めて checkYusho を呼ぶ） ──
+    const isYusho = checkYusho(d, wins);
 
-    // 三賞
-    const sansho = d.sanshoRecord?.slice(-1) || [];
+    // 連勝記録更新
+    if (wins > losses) {
+      d.winStreak = (d.winStreak || 0) + 1;
+      d.bestWinStreak = Math.max(d.bestWinStreak || 0, d.winStreak);
+    } else {
+      d.winStreak = 0;
+    }
+
+    // 金星チェック（幕内平幕が横綱に勝った記録）
+    const kinboshiCount = (d.bashoMatchResults || [])
+      .filter(r => r.won && r.opponent?.isYokozuna).length;
+    if (kinboshiCount > 0 && d.divIdx === DIV_MAKUNOUCHI) {
+      d.kinboshi = (d.kinboshi || 0) + kinboshiCount;
+      queueModal({
+        em: '⭐', title: `金星！${d.name}が横綱を倒した！`,
+        text: `金星${kinboshiCount}個獲得！\n通算金星：${d.kinboshi}個\nやる気が大きく上昇！`,
+      });
+      d.motivation = Math.min(100, d.motivation + 20 * kinboshiCount);
+      addHistory({ icon: '⭐', text: `${d.name} 金星！（通算${d.kinboshi}個）` });
+    }
+
+    // 三賞判定（ここで初めて checkSansho を呼ぶ）
+    const sanshoResult = checkSansho(d, wins);
+    if (sanshoResult) {
+      d.sanshoRecord = d.sanshoRecord || [];
+      d.sanshoRecord.push(...sanshoResult);
+      addHistory({ icon: '🎖', text: `${d.name} ${sanshoResult.join('・')}受賞！` });
+    }
+    const sansho = sanshoResult || [];
 
     // 引退年齢チェック
     const retireStatus = checkRetirementAge(d);
@@ -331,6 +375,34 @@ function handleForcedRetire(d) {
   });
 }
 
+// ─── 優勝セレブレーションアニメーション ─────────
+function triggerYushoCelebration() {
+  const container = document.getElementById('yusho-celebration');
+  if (!container) return;
+  const colors = ['#FFD700','#FF4500','#FF69B4','#00CED1','#7FFF00','#FF6347','#9370DB'];
+  const symbols = ['🏆','⭐','✨','🎉','🎊','🌟'];
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    const isSymbol = Math.random() < 0.3;
+    if (isSymbol) {
+      piece.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+      piece.style.fontSize = `${12 + Math.random() * 16}px`;
+    } else {
+      piece.style.width = `${6 + Math.random() * 8}px`;
+      piece.style.height = `${6 + Math.random() * 8}px`;
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.borderRadius = Math.random() < 0.5 ? '50%' : '0';
+    }
+    piece.style.left = `${Math.random() * 100}%`;
+    piece.style.animationDelay = `${Math.random() * 2}s`;
+    piece.style.animationDuration = `${2.5 + Math.random() * 2}s`;
+    container.appendChild(piece);
+  }
+  // 4秒後に自動除去
+  setTimeout(() => container.remove(), 5000);
+}
+
 // ─── 結果カードHTML ──────────────────────────────
 function renderResultCard(r) {
   const d    = r.disciple;
@@ -348,6 +420,20 @@ function renderResultCard(r) {
     rankChange = `${div.short}${d.pos}枚目（変動なし）`;
   }
 
+  // 星取表（○●表示）
+  const hoshitori = (d.bashoMatchResults || []).map(m => m.won
+    ? '<span class="hoshi-win">○</span>'
+    : '<span class="hoshi-loss">●</span>'
+  ).join('');
+
+  // 幕内×N スタイルの通算優勝表示
+  const yushoByDiv = {};
+  (d.yushoRecord || []).forEach(y => {
+    yushoByDiv[y.divName] = (yushoByDiv[y.divName] || 0) + 1;
+  });
+  const yushoSummary = Object.entries(yushoByDiv)
+    .map(([dn, n]) => `${dn}×${n}`).join(' ');
+
   return `
     <div class="result-card ${r.isYusho ? 'yusho-card' : ''}">
       <div class="rc-name">${r.isYusho ? '🏆 ' : ''}${d.name}</div>
@@ -357,10 +443,13 @@ function renderResultCard(r) {
         <span class="rc-judge ${r.wins > r.losses ? 'kachi' : r.wins < r.losses ? 'make' : 'gobu'}">
           ${r.wins > r.losses ? '勝ち越し' : r.wins < r.losses ? '負け越し' : '五分'}
         </span>
+        ${d.winStreak >= 2 ? `<span class="streak-badge">${d.winStreak}場所連続勝ち越し🔥</span>` : ''}
       </div>
+      <div class="rc-hoshitori">${hoshitori}</div>
       <div class="rc-rank-change">${rankChange}</div>
-      ${r.isYusho ? `<div class="rc-yusho">🏆 ${DIVISIONS[r.oldDivIdx].name}優勝！</div>` : ''}
+      ${r.isYusho ? `<div class="rc-yusho">🏆 ${oldD.name}優勝！（通算：${yushoSummary || '初優勝！'}）</div>` : ''}
       ${r.sansho?.length > 0 ? `<div class="rc-sansho">🎖 ${r.sansho.join('・')}</div>` : ''}
+      ${d.kinboshi > 0 ? `<div class="rc-kinboshi">⭐ 金星${d.kinboshi}個</div>` : ''}
       ${d.injuryLevel >= 1 ? `<div class="rc-inj">🤕 ${d.injuryPart ? d.injuryPart + 'の' : ''}${d.injuryLevel >= 2 ? '重傷' : '軽傷'}</div>` : ''}
     </div>`;
 }

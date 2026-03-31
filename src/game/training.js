@@ -36,11 +36,9 @@ export function applyTraining(d, cmdId) {
     return { ok: false, msg: `スタミナが足りない！（必要:${cmd.stamCost}）` };
   }
 
-  // 稽古回数チェック
-  if (cmd.stamCost > 0) {
-    if ((GS.trainTurnsLeft ?? TRAINING_TURNS_PER_BASHO) <= 0) {
-      return { ok: false, msg: '今月の稽古は十分です！休養してください。' };
-    }
+  // 行動回数チェック（休息・食事も含む全コマンド）
+  if ((GS.trainTurnsLeft ?? TRAINING_TURNS_PER_BASHO) <= 0) {
+    return { ok: false, msg: '今月の行動が上限に達しました！場所へ向かいましょう。' };
   }
 
   d.stamina = clamp(d.stamina - cmd.stamCost, 0, d.maxStamina);
@@ -175,10 +173,8 @@ export function applyTraining(d, cmdId) {
     }
   }
 
-  // 稽古回数を消費（スタミナコストあるコマンドのみ）
-  if (cmd.stamCost > 0) {
-    GS.trainTurnsLeft = Math.max(0, (GS.trainTurnsLeft ?? TRAINING_TURNS_PER_BASHO) - 1);
-  }
+  // 行動回数を消費（全コマンド）
+  GS.trainTurnsLeft = Math.max(0, (GS.trainTurnsLeft ?? TRAINING_TURNS_PER_BASHO) - 1);
 
   // 天才肌の大爆発メッセージ
   if (d.personality === 'genius' && msgs.length > 0) {

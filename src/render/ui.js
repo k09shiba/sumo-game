@@ -71,7 +71,7 @@ export function refreshTrainTab() {
   if (turnsEl) {
     const turns = GS.trainTurnsLeft ?? 10;
     const color = turns <= 2 ? '#e74c3c' : turns <= 4 ? '#e67e22' : '#27ae60';
-    turnsEl.innerHTML = `<span class="turns-label">稽古残り</span> <span class="turns-count" style="color:${color}">${turns}</span><span class="turns-label"> / 10回</span>`;
+    turnsEl.innerHTML = `<span class="turns-label">残り行動</span> <span class="turns-count" style="color:${color}">${turns}</span><span class="turns-label"> / 10回</span>`;
   }
 
   // ステータスバー
